@@ -11,4 +11,29 @@ model Room {
   id        String   @id @default(uuid())
   name      String
   createdAt DateTime @default(now())
+
+  participants Participant[]
+  snapshots    Snapshot[]
+}
+
+model Participant {
+  id       String   @id @default(uuid())
+  name     String
+  roomId   String
+  joinedAt DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+}
+
+model Snapshot {
+  id        String   @id @default(uuid())
+  roomId    String
+  state     Bytes
+  createdAt DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
 }

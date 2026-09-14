@@ -1,14 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { checkServerHealth } from "./lib/api";
-
 
 export default function Home() {
   const [status, setStatus] = useState("Checking server...");
 
   useEffect(() => {
-    checkServerHealth()
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/health`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Server returned an error");
+        }
+
+        return response.json();
+      })
       .then((data) => {
         setStatus(data.status);
       })
@@ -18,17 +23,9 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold">
-          Collaborative Code Editor
-        </h1>
-
-        <p className="mt-4">
-          Backend status:{" "}
-          <span className="font-semibold">{status}</span>
-        </p>
-      </div>
+    <main>
+      <h1>Collaborative Code Editor</h1>
+      <p>Backend status: {status}</p>
     </main>
   );
 }
