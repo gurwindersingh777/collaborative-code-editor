@@ -1,8 +1,14 @@
 import "dotenv/config";
+import { createServer } from "node:http";
 import app from "./app.js";
+import { createSocketServer } from "./socket.js";
 
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT) || 4000;
 
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+
+createSocketServer(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
