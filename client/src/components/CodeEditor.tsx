@@ -1,40 +1,54 @@
-import { ytext } from "@/lib/yjs"
-import { Editor, type OnMount } from "@monaco-editor/react"
-import { useEffect, useRef } from "react"
-import { MonacoBinding } from "y-monaco"
+"use client";
+
+import { useEffect, useRef } from "react";
+import Editor, { type OnMount } from "@monaco-editor/react";
+import type * as Y from "yjs";
+import type { MonacoBinding } from "y-monaco";
 
 type CodeEditorProps = {
-  language: string
-}
+  language: string;
+  ytext: Y.Text;
+};
 
-export default function CodeEditor({ language }: CodeEditorProps) {
+export default function CodeEditor({ language, ytext }: CodeEditorProps) {
   const bindingRef = useRef<MonacoBinding | null>(null);
 
-  const handleEditorMount: OnMount = (editor) => {
+  const handleEditorMount: OnMount = async (editor) => {
     const model = editor.getModel();
-    if (!model) return;
-    bindingRef.current = new MonacoBinding(ytext, model, new Set([editor]))
-  }
+
+    if (!model) {
+      return;
+    }
+
+    const { MonacoBinding } = await import("y-monaco");
+
+    bindingRef.current = new MonacoBinding(
+      ytext,
+      model,
+      new Set([editor]),
+    );
+  };
 
   useEffect(() => {
     return () => {
       bindingRef.current?.destroy();
       bindingRef.current = null;
-    }
-  }, [])
+    };
+  }, [ytext]);
 
   return (
     <Editor
       height="100%"
       width="100%"
       language={language}
-      onMount={handleEditorMount}
       theme="vs-dark"
+      onMount={handleEditorMount}
       options={{
         minimap: { enabled: false },
         fontSize: 14,
         lineHeight: 22,
-        fontFamily: "var(--font-geist-mono), 'Fira Code', Consolas, monospace",
+        fontFamily:
+          "var(--font-geist-mono), 'Fira Code', Consolas, monospace",
         automaticLayout: true,
         padding: {
           top: 16,
@@ -47,5 +61,5 @@ export default function CodeEditor({ language }: CodeEditorProps) {
         wordWrap: "on",
       }}
     />
-  )
+  );
 }
