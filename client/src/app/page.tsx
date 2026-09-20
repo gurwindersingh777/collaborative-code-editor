@@ -6,6 +6,9 @@ import { createYjsDocument } from "@/lib/yjs";
 import { setupYjsSync } from "@/lib/yjsSync";
 import type * as Y from "yjs";
 import { useEffect, useState } from "react";
+import { Awareness } from "y-protocols/awareness.js";
+import { createLocalUser, setupAwareness } from "@/lib/presence";
+import { setupAwarenessSync } from "@/lib/yjsAwareness";
 
 type Language = "javascript" | "python";
 
@@ -15,6 +18,10 @@ export default function Home() {
   const [roomId, setRoomId] = useState("");
   const [connected, setConnected] = useState(false);
   const [ytext, setYtext] = useState<Y.Text | null>(null);
+  const [awareness, setAwareness] = useState<Awareness | null>(null);
+
+  // temporary user
+  const [user] = useState(() => createLocalUser(`User-${Math.floor(Math.random() * 1000)}`,))
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -26,22 +33,27 @@ export default function Home() {
   useEffect(() => {
     if (!roomId) return;
 
-    const { ydoc, ytext } = createYjsDocument();
+    const { ydoc, ytext, awareness } = createYjsDocument();
 
     setYtext(ytext);
+    setAwareness(awareness);
 
-    const cleanupSync = setupYjsSync(
-      socket,
-      roomId,
-      ydoc,
-    );
+    const cleanupSync = setupYjsSync(socket, roomId, ydoc);
+    const cleanupAwareness = setupAwarenessSync(socket, roomId, awareness);
+
+    setupAwareness(awareness, user);
 
     return () => {
       cleanupSync();
+      cleanupAwareness();
+
+      awareness.destroy();
       ydoc.destroy();
+
       setYtext(null);
+      setAwareness(null);
     };
-  }, [roomId]);
+  }, [roomId, user]);
 
   useEffect(() => {
     if (!roomId) {
@@ -74,6 +86,20 @@ export default function Home() {
       socket.disconnect();
     };
   }, [roomId]);
+
+  useEffect(() => {
+    if (!awareness) return;
+
+    function handleAwarenessChange() {
+      console.log("Awareness states:", Array.from(awareness.getStates().entries()));
+    }
+
+    awareness.on("change", handleAwarenessChange);
+
+    return () => {
+      awareness.off("change", handleAwarenessChange);
+    };
+  }, [awareness]);
 
   function handleLanguageChange(newLanguage: Language) {
     setLanguage(newLanguage);

@@ -19,55 +19,40 @@ export function createSocketServer(httpServer: HttpServer) {
       const ydoc = getRoomDocument(roomId);
       const state = Y.encodeStateAsUpdate(ydoc);
 
-      socket.emit("yjs-sync", {
-        roomId,
-        update: Array.from(state),
-      });
+      socket.emit("yjs-sync", { roomId, update: Array.from(state) });
 
       console.log(`${socket.id} joined room ${roomId}`);
 
-      socket.to(roomId).emit("user-joined", {
-        socketId: socket.id,
-      });
+      socket.to(roomId).emit("user-joined", { socketId: socket.id });
+      socket.to(roomId).emit("awareness-request", { roomId });
     });
 
-    socket.on(
-      "code-change",
-      ({ roomId, code }: { roomId: string; code: string }) => {
-        socket.to(roomId).emit("code-change", { code });
-      },
-    );
+    socket.on("code-change", ({ roomId, code }: { roomId: string; code: string }) => {
+      socket.to(roomId).emit("code-change", { code });
+    });
 
-    socket.on(
-      "yjs-update",
-      ({
-        roomId,
-        update,
-      }: {
-        roomId: string;
-        update: number[];
-      }) => {
-        const ydoc = getRoomDocument(roomId);
-        const uint8Update = new Uint8Array(update);
+    socket.on("yjs-update", ({ roomId, update }: { roomId: string; update: number[] }) => {
+      const ydoc = getRoomDocument(roomId);
+      const uint8Update = new Uint8Array(update);
 
-        Y.applyUpdate(ydoc, uint8Update, "remote");
+      Y.applyUpdate(ydoc, uint8Update, "remote");
 
-        socket.to(roomId).emit("yjs-update", {
-          roomId,
-          update,
-        });
-      },
-    );
+      socket.to(roomId).emit("yjs-update", { roomId, update });
+    });
 
     socket.on("leave-room", (roomId: string) => {
       socket.leave(roomId);
-
       console.log(`${socket.id} left room ${roomId}`);
     });
 
     socket.on("disconnect", () => {
       console.log(`Socket disconnected: ${socket.id}`);
     });
+
+    socket.on("awareness-update", ({ roomId, update }: { roomId: string; update: number[] }) => {
+      socket.to(roomId).emit("awareness-update", { roomId, update });
+    });
+
   });
 
   return io;
