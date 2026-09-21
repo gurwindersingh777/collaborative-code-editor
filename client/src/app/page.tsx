@@ -90,14 +90,25 @@ export default function Home() {
   useEffect(() => {
     if (!awareness) return;
 
-    function handleAwarenessChange() {
-      console.log("Awareness states:", Array.from(awareness.getStates().entries()));
-    }
+    const handleAwarenessChange = () => {
+      console.log(
+        "Awareness states:",
+        Array.from(
+          awareness.getStates().entries(),
+        ),
+      );
+    };
 
-    awareness.on("change", handleAwarenessChange);
+    awareness.on(
+      "change",
+      handleAwarenessChange,
+    );
 
     return () => {
-      awareness.off("change", handleAwarenessChange);
+      awareness.off(
+        "change",
+        handleAwarenessChange,
+      );
     };
   }, [awareness]);
 
@@ -150,10 +161,11 @@ export default function Home() {
 
       <section className="grid min-h-0 flex-1 grid-cols-2">
         <div className="min-h-0">
-          {ytext && (
+          {ytext && awareness && (
             <CodeEditor
               language={language}
               ytext={ytext}
+              awareness={awareness}
             />
           )}
         </div>

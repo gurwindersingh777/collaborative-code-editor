@@ -1,3 +1,4 @@
+import { CursorPresence } from "@/types/presence";
 import { Awareness } from "y-protocols/awareness.js";
 
 const USER_COLORS = [
@@ -34,4 +35,8 @@ export function setupAwareness(awareness: Awareness, user: LocalUser) {
     name: user.name,
     color: user.color,
   })
+}
+
+export function updateCursor(awareness: Awareness, cursor: CursorPresence) {
+  awareness.setLocalStateField("cursor", cursor)
 }
