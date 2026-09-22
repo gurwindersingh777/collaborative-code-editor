@@ -9,13 +9,11 @@ type AwarenessPayload = {
 export function setupAwarenessSync(socket: Socket, roomId: string, awareness: Awareness) {
   function sendAwarenessUpdate(changedClients: number[]) {
     if (changedClients.length === 0) return;
+    if (!socket.connected) return;
 
     const update = encodeAwarenessUpdate(awareness, changedClients);
 
-    socket.emit("awareness-update", {
-      roomId,
-      update: Array.from(update),
-    });
+    socket.emit("awareness-update", { roomId, update: Array.from(update) });
   }
 
   function handleAwarenessUpdate({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] },
@@ -27,7 +25,7 @@ export function setupAwarenessSync(socket: Socket, roomId: string, awareness: Aw
     sendAwarenessUpdate(changedClients);
   }
 
-  function handleRemoteAwareness(data: AwarenessPayload,) {
+  function handleRemoteAwareness(data: AwarenessPayload) {
     if (data.roomId !== roomId) return;
 
     const update = new Uint8Array(data.update);
@@ -40,18 +38,23 @@ export function setupAwarenessSync(socket: Socket, roomId: string, awareness: Aw
 
     const clients = Array.from(awareness.getStates().keys());
 
-    if (clients.length === 0) return;
+    sendAwarenessUpdate(clients);
+  }
 
+  function handleSocketConnect() {
+    const clients = Array.from(awareness.getStates().keys());
     sendAwarenessUpdate(clients);
   }
 
   awareness.on("update", handleAwarenessUpdate);
   socket.on("awareness-update", handleRemoteAwareness);
   socket.on("awareness-request", handleAwarenessRequest);
+  socket.on("connect", handleSocketConnect);
 
   return () => {
     awareness.off("update", handleAwarenessUpdate);
     socket.off("awareness-update", handleRemoteAwareness);
     socket.off("awareness-request", handleAwarenessRequest);
-  };
+    socket.off("connect", handleSocketConnect);
+  }
 }

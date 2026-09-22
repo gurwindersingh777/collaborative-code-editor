@@ -114,27 +114,36 @@ export default function CodeEditor({ language, ytext, awareness }: CodeEditorPro
     updateRemotePresence();
 
     // Create styles for remote cursors
-    const styleElement = document.createElement("style");
-    styleElement.id = "remote-cursor-styles";
-    styleElement.textContent = `
-      ${Array
-        .from(awareness.getStates().entries())
-        .filter(([clientId, state]) => clientId !== awareness.clientID && state.user)
+    const styleElement =
+      document.createElement("style");
+
+    styleElement.id =
+      `remote-cursor-styles-${awareness.clientID}`;
+
+    document.head.appendChild(
+      styleElement,
+    );
+
+    function updateRemoteStyles() {
+      styleElement.textContent = `${Array.from(awareness.getStates().entries())
+        .filter(([clientId, state]) => clientId !== awareness.clientID && state.user,)
         .map(([clientId, state]) => `
-            .remote-cursor-${clientId} {
-              border-left: 2px solid ${state.user.color};
-              margin-left: -1px;
-            }
+          .remote-cursor-${clientId} {
+            border-left: 2px solid ${state.user.color};
+            margin-left: -1px;
+          }
 
-            .remote-selection-${clientId} {
-              background-color: ${state.user.color};
-              opacity: 0.25;
-            }
-          `,)
+          .remote-selection-${clientId} {
+            background-color: ${state.user.color};
+            opacity: 0.25;
+          }
+        `,
+        )
         .join("\n")}
-    `;
+  `;
+    }
 
-    document.head.appendChild(styleElement);
+    updateRemoteStyles();
 
     editor.onDidDispose(() => {
       awareness.off("change", updateRemotePresence);
