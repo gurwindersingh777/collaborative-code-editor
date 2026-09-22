@@ -8,7 +8,15 @@ export interface CursorPresence {
   column: number;
 }
 
+export interface SelectionPresence {
+  startLineNumber: number;
+  startColumn: number;
+  endLineNumber: number;
+  endColumn: number;
+}
+
 export interface AwarenessState {
   user: UserPresence;
   cursor?: CursorPresence;
+  selection?: SelectionPresence;
 }

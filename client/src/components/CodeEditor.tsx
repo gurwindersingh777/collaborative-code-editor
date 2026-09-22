@@ -13,30 +13,11 @@ type CodeEditorProps = {
   awareness: Awareness;
 };
 
-type RemoteUserWidget = {
-  widget: MonacoEditor.IContentWidget;
-  element: HTMLElement;
-  position: {
-    lineNumber: number;
-    column: number;
-  };
-};
-
-export default function CodeEditor({
-  language,
-  ytext,
-  awareness,
-}: CodeEditorProps) {
+export default function CodeEditor({ language, ytext, awareness }: CodeEditorProps) {
   const bindingRef = useRef<MonacoBinding | null>(null);
-
-  const cursorListenerRef =
-    useRef<{ dispose: () => void } | null>(null);
-
-  const decorationsRef =
-    useRef<MonacoEditor.IEditorDecorationsCollection | null>(null);
-
-  const widgetsRef =
-    useRef<Map<number, RemoteUserWidget>>(new Map());
+  const cursorListenerRef = useRef<{ dispose: () => void } | null>(null);
+  const selectionListenerRef = useRef<{ dispose: () => void } | null>(null);
+  const decorationsRef = useRef<MonacoEditor.IEditorDecorationsCollection | null>(null);
 
   const handleEditorMount: OnMount = async (editor) => {
     const model = editor.getModel();
@@ -47,15 +28,12 @@ export default function CodeEditor({
 
     const { MonacoBinding } = await import("y-monaco");
 
-    bindingRef.current = new MonacoBinding(
-      ytext,
-      editorModel,
-      new Set([editor]),
-    );
+    // Connect Monaco to Yjs
+    bindingRef.current = new MonacoBinding(ytext, editorModel, new Set([editor]));
 
-    decorationsRef.current =
-      editor.createDecorationsCollection();
+    decorationsRef.current = editor.createDecorationsCollection();
 
+    // Track local cursor
     cursorListenerRef.current =
       editor.onDidChangeCursorPosition((event) => {
         awareness.setLocalStateField("cursor", {
@@ -64,87 +42,43 @@ export default function CodeEditor({
         });
       });
 
-    function createUserWidget(
-      clientId: number,
-      name: string,
-      color: string,
-      lineNumber: number,
-      column: number,
-    ): RemoteUserWidget {
-      const element = document.createElement("div");
+    // Track local selection
+    selectionListenerRef.current =
+      editor.onDidChangeCursorSelection((event) => {
+        const selection = event.selection;
 
-      element.className = "remote-user-label";
-      element.textContent = name;
-      element.style.backgroundColor = color;
-
-      const position = {
-        lineNumber,
-        column,
-      };
-
-      const widget: MonacoEditor.IContentWidget = {
-        getId: () => `remote-user-${clientId}`,
-
-        getDomNode: () => element,
-
-        getPosition: () => ({
-          position,
-          preference: [2, 1],
-        }),
-      };
-
-      editor.addContentWidget(widget);
-
-      return {
-        widget,
-        element,
-        position,
-      };
-    }
+        awareness.setLocalStateField("selection", {
+          startLineNumber: selection.startLineNumber,
+          startColumn: selection.startColumn,
+          endLineNumber: selection.endLineNumber,
+          endColumn: selection.endColumn,
+        });
+      });
 
     function updateRemotePresence() {
       const decorations: MonacoEditor.IModelDeltaDecoration[] = [];
 
-      const activeClientIds = new Set<number>();
-
       awareness.getStates().forEach((state, clientId) => {
-        // Don't render our own cursor.
-        if (clientId === awareness.clientID) {
-          return;
-        }
+        // Don't render our own cursor
+        if (clientId === awareness.clientID) return;
 
         const user = state.user;
         const cursor = state.cursor;
+        const selection = state.selection;
 
-        if (!user || !cursor) {
-          return;
-        }
+        if (!user || !cursor) return;
 
         const lineNumber = cursor.lineNumber;
         const column = cursor.column;
 
-        if (
-          lineNumber < 1 ||
-          lineNumber > editorModel.getLineCount()
-        ) {
-          return;
-        }
+        // Make sure cursor is inside the current model
+        if (lineNumber < 1 || lineNumber > editorModel.getLineCount()) return;
 
-        const maxColumn =
-          editorModel.getLineMaxColumn(lineNumber);
+        const maxColumn = editorModel.getLineMaxColumn(lineNumber);
 
-        if (
-          column < 1 ||
-          column > maxColumn
-        ) {
-          return;
-        }
+        if (column < 1 || column > maxColumn) return;
 
-        activeClientIds.add(clientId);
-
-        /*
-         * Remote cursor decoration.
-         */
+        // Remote cursor
         decorations.push({
           range: {
             startLineNumber: lineNumber,
@@ -152,138 +86,59 @@ export default function CodeEditor({
             endLineNumber: lineNumber,
             endColumn: column,
           },
-
           options: {
             className: `remote-cursor-${clientId}`,
           },
         });
 
-        /*
-         * Username widget.
-         */
-        const existingWidget =
-          widgetsRef.current.get(clientId);
-
-        if (existingWidget) {
-          existingWidget.position.lineNumber = lineNumber;
-          existingWidget.position.column = column;
-
-          existingWidget.element.textContent =
-            user.name;
-
-          existingWidget.element.style.backgroundColor =
-            user.color;
-
-          editor.layoutContentWidget(
-            existingWidget.widget,
-          );
-        } else {
-          const widget = createUserWidget(
-            clientId,
-            user.name,
-            user.color,
-            lineNumber,
-            column,
-          );
-
-          widgetsRef.current.set(
-            clientId,
-            widget,
-          );
+        // Remote selection
+        if (selection) {
+          decorations.push({
+            range: {
+              startLineNumber: selection.startLineNumber,
+              startColumn: selection.startColumn,
+              endLineNumber: selection.endLineNumber,
+              endColumn: selection.endColumn,
+            },
+            options: {
+              className: `remote-selection-${clientId}`,
+            },
+          });
         }
       });
 
-      /*
-       * Remove widgets for users
-       * who are no longer present.
-       */
-      widgetsRef.current.forEach(
-        (widget, clientId) => {
-          if (!activeClientIds.has(clientId)) {
-            editor.removeContentWidget(
-              widget.widget,
-            );
-
-            widgetsRef.current.delete(clientId);
-          }
-        },
-      );
-
-      decorationsRef.current?.set(
-        decorations,
-      );
+      decorationsRef.current?.set(decorations);
     }
 
-    awareness.on(
-      "change",
-      updateRemotePresence,
-    );
-
+    awareness.on("change", updateRemotePresence);
     updateRemotePresence();
 
-    /*
-     * Add styles for remote cursors
-     * and username labels.
-     */
-    const styleElement =
-      document.createElement("style");
-
-    styleElement.id =
-      "remote-cursor-styles";
-
+    // Create styles for remote cursors
+    const styleElement = document.createElement("style");
+    styleElement.id = "remote-cursor-styles";
     styleElement.textContent = `
-      .remote-user-label {
-        color: white;
-        padding: 2px 6px;
-        border-radius: 3px;
-        margin-left: 4px;
-        font-size: 11px;
-        font-family: sans-serif;
-        white-space: nowrap;
-        pointer-events: none;
-        z-index: 10;
-      }
-
-      ${Array.from(
-      awareness.getStates().keys(),
-    )
-        .filter(
-          (clientId) =>
-            clientId !== awareness.clientID,
-        )
-        .map(
-          (clientId) => `
+      ${Array
+        .from(awareness.getStates().entries())
+        .filter(([clientId, state]) => clientId !== awareness.clientID && state.user)
+        .map(([clientId, state]) => `
             .remote-cursor-${clientId} {
-              border-left: 2px solid currentColor;
+              border-left: 2px solid ${state.user.color};
               margin-left: -1px;
             }
-          `,
-        )
+
+            .remote-selection-${clientId} {
+              background-color: ${state.user.color};
+              opacity: 0.25;
+            }
+          `,)
         .join("\n")}
     `;
 
-    document.head.appendChild(
-      styleElement,
-    );
+    document.head.appendChild(styleElement);
 
     editor.onDidDispose(() => {
-      awareness.off(
-        "change",
-        updateRemotePresence,
-      );
-
+      awareness.off("change", updateRemotePresence);
       decorationsRef.current?.clear();
-
-      widgetsRef.current.forEach(
-        (widget) => {
-          editor.removeContentWidget(
-            widget.widget,
-          );
-        },
-      );
-
-      widgetsRef.current.clear();
-
       styleElement.remove();
     });
   };
@@ -296,10 +151,11 @@ export default function CodeEditor({
       cursorListenerRef.current?.dispose();
       cursorListenerRef.current = null;
 
+      selectionListenerRef.current?.dispose();
+      selectionListenerRef.current = null;
+
       decorationsRef.current?.clear();
       decorationsRef.current = null;
-
-      widgetsRef.current.clear();
     };
   }, [ytext, awareness]);
 
@@ -311,32 +167,19 @@ export default function CodeEditor({
       theme="vs-dark"
       onMount={handleEditorMount}
       options={{
-        minimap: {
-          enabled: false,
-        },
-
+        minimap: { enabled: false },
         fontSize: 14,
-
         lineHeight: 22,
-
-        fontFamily:
-          "var(--font-geist-mono), 'Fira Code', Consolas, monospace",
-
+        fontFamily: "var(--font-geist-mono), 'Fira Code', Consolas, monospace",
         automaticLayout: true,
-
         padding: {
           top: 16,
           bottom: 16,
         },
-
         scrollBeyondLastLine: false,
-
         smoothScrolling: true,
-
         renderWhitespace: "selection",
-
         tabSize: 2,
-
         wordWrap: "on",
       }}
     />
