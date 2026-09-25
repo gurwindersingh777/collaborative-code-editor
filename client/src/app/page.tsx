@@ -10,6 +10,7 @@ import { Awareness } from "y-protocols/awareness.js";
 import { createLocalUser, setupAwareness } from "@/lib/presence";
 import { setupAwarenessSync } from "@/lib/yjsAwareness";
 import { generateRoomId } from "@/lib/room";
+import OnlineUsers from "@/components/OnlineUsers";
 
 type Language = "javascript" | "python";
 
@@ -193,11 +194,18 @@ export default function Home() {
       <section className="grid min-h-0 flex-1 grid-cols-2">
         <div className="min-h-0">
           {ytext && awareness && (
-            <CodeEditor
-              language={language}
-              ytext={ytext}
-              awareness={awareness}
-            />
+            <div className="h-full flex">
+              
+              <div className="flex-1 min-w-0">
+                <CodeEditor
+                  language={language}
+                  ytext={ytext}
+                  awareness={awareness}
+                />
+              </div>
+
+              <OnlineUsers awareness={awareness} />
+            </div>
           )}
         </div>
 

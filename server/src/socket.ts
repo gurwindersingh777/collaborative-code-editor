@@ -3,6 +3,8 @@ import type { Server as HttpServer } from "node:http";
 import * as Y from "yjs";
 import { getRoomDocument } from "../src/yjs/roomDocuments.js";
 
+const awarenessClients = new Map<string, { roomId: string; clientId: number }>();
+
 export function createSocketServer(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
@@ -46,10 +48,19 @@ export function createSocketServer(httpServer: HttpServer) {
     });
 
     socket.on("disconnect", () => {
+      const awarenessClient = awarenessClients.get(socket.id);
+
+      if (awarenessClient) {
+        const { roomId, clientId } = awarenessClient;
+        socket.to(roomId).emit("awareness-remove", { roomId, clientId })
+        awarenessClients.delete(socket.id)
+      }
+
       console.log(`Socket disconnected: ${socket.id}`);
     });
 
-    socket.on("awareness-update", ({ roomId, update }: { roomId: string; update: number[] }) => {
+    socket.on("awareness-update", ({ roomId, clientId, update }: { roomId: string; clientId: number; update: number[] }) => {
+      awarenessClients.set(socket.id, { roomId, clientId });
       socket.to(roomId).emit("awareness-update", { roomId, update });
     });
 
