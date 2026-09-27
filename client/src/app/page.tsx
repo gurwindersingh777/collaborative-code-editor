@@ -63,7 +63,7 @@ export default function Home() {
 
     function handleConnect() {
       setConnected(true);
-      socket.emit("join-room", roomId);
+      socket.emit("join-room", { roomId, user: { name: user.name, color: user.color } });
     }
 
     function handleDisconnect() {
@@ -195,7 +195,7 @@ export default function Home() {
         <div className="min-h-0">
           {ytext && awareness && (
             <div className="h-full flex">
-              
+
               <div className="flex-1 min-w-0">
                 <CodeEditor
                   language={language}
