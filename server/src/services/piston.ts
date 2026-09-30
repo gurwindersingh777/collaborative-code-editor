@@ -33,10 +33,7 @@ const RUNTIME_VERSIONS: Record<SupportedLanguage, string> = {
 //   ]
 // }
 
-export async function executeCode(
-  language: SupportedLanguage,
-  code: string
-): Promise<PistonResult> {
+export async function executeCode(language: SupportedLanguage, code: string): Promise<PistonResult> {
   const response = await fetch(`${PISTON_URL}/api/v2/execute`, {
     method: "POST",
     headers: {
@@ -45,12 +42,10 @@ export async function executeCode(
     body: JSON.stringify({
       language,
       version: RUNTIME_VERSIONS[language],
-      files: [
-        {
-          name: language === "javascript" ? "main.js" : "main.py",
-          content: code,
-        },
-      ],
+      files: [{
+        name: language === "javascript" ? "main.js" : "main.py",
+        content: code,
+      }],
     }),
   });
 
