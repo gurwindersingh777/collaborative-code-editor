@@ -4,6 +4,7 @@ import * as Y from "yjs";
 import { getRoomDocument } from "../src/yjs/roomDocuments.js";
 import { addActiveUser, getActiveUsers, removeActiveUser } from "./rooms/activeUsers.js";
 
+let ioInstance: Server | null = null;
 const awarenessClients = new Map<string, { roomId: string; clientId: number }>();
 const socketRooms = new Map<string, string>();
 
@@ -13,6 +14,8 @@ export function createSocketServer(httpServer: HttpServer) {
       origin: process.env.CLIENT_URL ?? "http://localhost:3000",
     },
   });
+
+  ioInstance = io;
 
   io.on("connection", (socket) => {
     console.log(`Socket connection: ${socket.id}`);
@@ -31,11 +34,6 @@ export function createSocketServer(httpServer: HttpServer) {
       const state = Y.encodeStateAsUpdate(ydoc);
 
       socket.emit("yjs-sync", { roomId: roomId, update: Array.from(state) });
-
-      console.log(`${socket.id} joined room ${roomId}`);
-      // Temp
-      console.log("Active users:", getActiveUsers(roomId));
-
       socket.to(roomId).emit("user-joined", { socketId: socket.id });
       socket.to(roomId).emit("awareness-request", { roomId: roomId });
     });
@@ -51,7 +49,6 @@ export function createSocketServer(httpServer: HttpServer) {
       const uint8Update = new Uint8Array(update);
 
       Y.applyUpdate(ydoc, uint8Update, "remote");
-
       socket.to(roomId).emit("yjs-update", { roomId, update });
     });
 
@@ -60,9 +57,6 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.leave(roomId);
       removeActiveUser(roomId, socket.id);
       socketRooms.delete(socket.id);
-
-      console.log("Active users:", getActiveUsers(roomId));
-      console.log(`${socket.id} left room ${roomId}`);
     });
 
 
@@ -73,7 +67,6 @@ export function createSocketServer(httpServer: HttpServer) {
       if (roomId) {
         removeActiveUser(roomId, socket.id);
         socketRooms.delete(socket.id);
-        console.log("Active users:", getActiveUsers(roomId));
       }
 
       if (awarenessClient) {
@@ -94,4 +87,12 @@ export function createSocketServer(httpServer: HttpServer) {
   });
 
   return io;
+}
+
+export function getSocketServer() {
+  if (!ioInstance) {
+    throw new Error("Socket.IO server has not been initialized");
+  }
+
+  return ioInstance
 }

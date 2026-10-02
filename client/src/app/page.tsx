@@ -14,6 +14,14 @@ import OnlineUsers from "@/components/OnlineUsers";
 
 type Language = "javascript" | "python";
 
+type ExecutionResult = {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  message?: string;
+  status?: string;
+};
+
 export default function Home() {
   const [language, setLanguage] = useState<Language>("javascript");
   const [output, setOutput] = useState("");
@@ -22,6 +30,7 @@ export default function Home() {
   const [ytext, setYtext] = useState<Y.Text | null>(null);
   const [awareness, setAwareness] = useState<Awareness | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
 
   // temporary user
   const [user] = useState(() => createLocalUser(`User-${Math.floor(Math.random() * 1000)}`,))
@@ -79,7 +88,6 @@ export default function Home() {
       if (socket.connected) {
         socket.emit("leave-room", roomId);
       }
-
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
       socket.disconnect();
@@ -87,26 +95,88 @@ export default function Home() {
   }, [roomId]);
 
   useEffect(() => {
-    if (!awareness) return;
+    function handleExecutionResult(result: ExecutionResult) {
 
-    const handleAwarenessChange = () => {
-      console.log("Awareness states:", Array.from(awareness.getStates().entries()));
-    };
+      setIsRunning(false);
 
-    awareness.on("change", handleAwarenessChange);
+      if (result.success) {
+        setOutput(result.stdout || "Program finished successfully.");
+        return;
+      }
+
+      if (result.status === "TO") {
+        setOutput(`Execution timed out.\n\n${result.message || "Time limit exceeded."}`);
+        return;
+      }
+
+      if (result.status === "OL") {
+        setOutput(
+          result.message || "Output limit exceeded."
+        );
+        return;
+      }
+
+      if (result.status === "EL") {
+        setOutput(
+          result.message || "Error output limit exceeded."
+        );
+        return;
+      }
+
+      setOutput(
+        result.stderr ||
+        result.message ||
+        "Program exited with an error."
+      );
+    }
+
+
+    socket.on("execution-result", handleExecutionResult);
 
     return () => {
-      awareness.off("change", handleAwarenessChange);
+      socket.off("execution-result", handleExecutionResult);
     };
-  }, [awareness]);
+  }, []);
 
   function handleLanguageChange(newLanguage: Language) {
     setLanguage(newLanguage);
     setOutput("");
   }
 
-  function handleRun() {
-    setOutput("Code sent to execution service.");
+  async function handleRun() {
+    if (!ytext) {
+      setOutput("Editor is not ready.");
+      return;
+    }
+
+    const code = ytext.toString();
+
+    if (!code.trim()) {
+      setOutput("Nothing to execute.");
+      return;
+    }
+
+    setOutput("Running...");
+    setIsRunning(true);
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId, language, code })
+      })
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setIsRunning(false);
+        setOutput(result.error || "Execution request failed.");
+        return;
+      }
+    } catch (error) {
+      setIsRunning(false);
+      setOutput("Unable to connect to execution service.");
+    }
   }
 
   function handleCreateRoom() {
@@ -147,27 +217,16 @@ export default function Home() {
   return (
     <main className="flex h-screen flex-col">
       <header className="flex items-center justify-between border-b p-4">
-        <h1 className="text-xl font-semibold">
-          Collaborative Code Editor
-        </h1>
+        <h1 className="text-xl font-semibold">Collaborative Code Editor</h1>
 
-        {roomId && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">
-              Room: {roomId}
-            </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Room: {roomId}</span>
+          <button onClick={handleCopyRoomLink} className="rounded border px-3 py-1 text-sm">
+            {copied ? "Copied!" : "Copy Link"}
+          </button>
+        </div>
 
-            <button
-              onClick={handleCopyRoomLink}
-              className="rounded border px-3 py-1 text-sm"
-            >
-              {copied ? "Copied!" : "Copy Link"}
-            </button>
-          </div>
-        )}
-
-        <span className="text-sm">
-          {connected ? "Connected" : "Disconnected"}
+        <span className="text-sm">{connected ? "Connected" : "Disconnected"}
         </span>
 
         <div className="flex items-center gap-3">
@@ -184,9 +243,10 @@ export default function Home() {
 
           <button
             onClick={handleRun}
-            className="rounded border px-4 py-2"
+            disabled={isRunning}
+            className="rounded border px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Run
+            {isRunning ? "Running..." : "Run"}
           </button>
         </div>
       </header>
@@ -197,11 +257,7 @@ export default function Home() {
             <div className="h-full flex">
 
               <div className="flex-1 min-w-0">
-                <CodeEditor
-                  language={language}
-                  ytext={ytext}
-                  awareness={awareness}
-                />
+                <CodeEditor language={language} ytext={ytext} awareness={awareness} />
               </div>
 
               <OnlineUsers awareness={awareness} />
@@ -211,10 +267,7 @@ export default function Home() {
 
         <div className="border-l p-4">
           <h2 className="mb-3 font-semibold">Output</h2>
-
-          <pre className="whitespace-pre-wrap text-sm">
-            {output || "Output will appear here."}
-          </pre>
+          <pre className="whitespace-pre-wrap text-sm">{output || "Output will appear here."}</pre>
         </div>
       </section>
     </main>

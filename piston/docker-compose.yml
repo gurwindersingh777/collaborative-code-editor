@@ -6,6 +6,8 @@ services:
     privileged: true
     ports:
       - "2000:2000"
+    environment:
+      PISTON_OUTPUT_MAX_SIZE: "1048576"
     volumes:
       - ./data/piston/packages:/piston/packages
     tmpfs:

@@ -4,14 +4,27 @@ interface PistonResult {
   run?: {
     stdout: string;
     stderr: string;
+    output?: string;
     code: number | null;
     signal: string | null;
+    message?: string | null;
+    status?: string | null;
+    memory?: number;
+    cpu_time?: number;
+    wall_time?: number;
   };
+
   compile?: {
     stdout: string;
     stderr: string;
+    output?: string;
     code: number | null;
     signal: string | null;
+    message?: string | null;
+    status?: string | null;
+    memory?: number;
+    cpu_time?: number;
+    wall_time?: number;
   };
 }
 
@@ -22,17 +35,6 @@ const RUNTIME_VERSIONS: Record<SupportedLanguage, string> = {
   python: "3.12.0",
 };
 
-// {
-//   "language": "javascript",
-//   "version": "20.11.1",
-//   "files": [
-//     {
-//       "name": "main.js",
-//       "content": "console.log(\"Hello\")"
-//     }
-//   ]
-// }
-
 export async function executeCode(language: SupportedLanguage, code: string): Promise<PistonResult> {
   const response = await fetch(`${PISTON_URL}/api/v2/execute`, {
     method: "POST",
@@ -42,14 +44,18 @@ export async function executeCode(language: SupportedLanguage, code: string): Pr
     body: JSON.stringify({
       language,
       version: RUNTIME_VERSIONS[language],
-      files: [{
-        name: language === "javascript" ? "main.js" : "main.py",
-        content: code,
-      }],
+      files: [
+        {
+          name: language === "javascript" ? "main.js" : "main.py",
+          content: code,
+        },
+      ],
     }),
   });
 
   if (!response.ok) {
+    const errorBody = await response.text();
+    console.error("Piston error response:", errorBody);
     throw new Error(`Piston returned HTTP ${response.status}`);
   }
 
