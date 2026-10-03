@@ -4,6 +4,7 @@ import * as Y from "yjs";
 export function createYjsDocument() {
   const ydoc = new Y.Doc();
   const ytext = ydoc.getText("code");
+  const problem = ydoc.getText("problem")
   const awareness = new Awareness(ydoc)
 
   ytext.observe(() => {
@@ -13,6 +14,7 @@ export function createYjsDocument() {
   return {
     ydoc,
     ytext,
+    problem,
     awareness
   };
 }

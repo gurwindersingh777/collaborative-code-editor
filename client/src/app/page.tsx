@@ -11,6 +11,7 @@ import { createLocalUser, setupAwareness } from "@/lib/presence";
 import { setupAwarenessSync } from "@/lib/yjsAwareness";
 import { generateRoomId } from "@/lib/room";
 import OnlineUsers from "@/components/OnlineUsers";
+import ProblemStatement from "@/components/ProblemStatement";
 
 type Language = "javascript" | "python";
 
@@ -28,6 +29,7 @@ export default function Home() {
   const [roomId, setRoomId] = useState("");
   const [connected, setConnected] = useState(false);
   const [ytext, setYtext] = useState<Y.Text | null>(null);
+  const [problem, setProblem] = useState<Y.Text | null>(null);
   const [awareness, setAwareness] = useState<Awareness | null>(null);
   const [copied, setCopied] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
@@ -45,9 +47,10 @@ export default function Home() {
   useEffect(() => {
     if (!roomId) return;
 
-    const { ydoc, ytext, awareness } = createYjsDocument();
+    const { ydoc, ytext, problem, awareness } = createYjsDocument();
 
     setYtext(ytext);
+    setProblem(problem);
     setAwareness(awareness);
 
     const cleanupSync = setupYjsSync(socket, roomId, ydoc);
@@ -63,6 +66,7 @@ export default function Home() {
       ydoc.destroy();
 
       setYtext(null);
+      setProblem(null);
       setAwareness(null);
     };
   }, [roomId, user]);
@@ -253,10 +257,11 @@ export default function Home() {
 
       <section className="grid min-h-0 flex-1 grid-cols-2">
         <div className="min-h-0">
-          {ytext && awareness && (
+          {ytext && problem && awareness && (
             <div className="h-full flex">
 
               <div className="flex-1 min-w-0">
+                <ProblemStatement problem={problem} />
                 <CodeEditor language={language} ytext={ytext} awareness={awareness} />
               </div>
 
