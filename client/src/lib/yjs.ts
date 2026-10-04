@@ -7,10 +7,6 @@ export function createYjsDocument() {
   const problem = ydoc.getText("problem")
   const awareness = new Awareness(ydoc)
 
-  ytext.observe(() => {
-    console.log("Y.Text changed:", ytext.toString());
-  });
-
   return {
     ydoc,
     ytext,

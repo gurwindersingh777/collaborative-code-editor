@@ -38,12 +38,6 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.to(roomId).emit("awareness-request", { roomId: roomId });
     });
 
-
-    socket.on("code-change", ({ roomId, code }: { roomId: string; code: string }) => {
-      socket.to(roomId).emit("code-change", { code });
-    });
-
-
     socket.on("yjs-update", ({ roomId, update }: { roomId: string; update: number[] }) => {
       const ydoc = getRoomDocument(roomId);
       const uint8Update = new Uint8Array(update);

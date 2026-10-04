@@ -28,7 +28,7 @@ interface PistonResult {
   };
 }
 
-const PISTON_URL = "http://localhost:2000";
+const PISTON_URL = process.env.PISTON_URL ?? "http://localhost:2000";
 
 const RUNTIME_VERSIONS: Record<SupportedLanguage, string> = {
   javascript: "20.11.1",

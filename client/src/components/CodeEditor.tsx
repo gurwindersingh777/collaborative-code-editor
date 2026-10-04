@@ -114,15 +114,9 @@ export default function CodeEditor({ language, ytext, awareness }: CodeEditorPro
     updateRemotePresence();
 
     // Create styles for remote cursors
-    const styleElement =
-      document.createElement("style");
-
-    styleElement.id =
-      `remote-cursor-styles-${awareness.clientID}`;
-
-    document.head.appendChild(
-      styleElement,
-    );
+    const styleElement = document.createElement("style");
+    styleElement.id = `remote-cursor-styles-${awareness.clientID}`;
+    document.head.appendChild(styleElement,);
 
     function updateRemoteStyles() {
       styleElement.textContent = `${Array.from(awareness.getStates().entries())
@@ -145,8 +139,11 @@ export default function CodeEditor({ language, ytext, awareness }: CodeEditorPro
 
     updateRemoteStyles();
 
+    awareness.on("change", updateRemoteStyles);
+
     editor.onDidDispose(() => {
       awareness.off("change", updateRemotePresence);
+      awareness.off("change", updateRemoteStyles);
       decorationsRef.current?.clear();
       styleElement.remove();
     });

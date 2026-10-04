@@ -24,3 +24,6 @@ piston/piston-source/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Prisma
+generated

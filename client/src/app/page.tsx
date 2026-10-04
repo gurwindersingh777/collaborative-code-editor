@@ -171,6 +171,7 @@ export default function Home() {
       })
 
       const result = await response.json();
+      setIsRunning(false);
 
       if (!response.ok) {
         setIsRunning(false);
