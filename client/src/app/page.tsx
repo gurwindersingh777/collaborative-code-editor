@@ -12,6 +12,7 @@ import { setupAwarenessSync } from "@/lib/yjsAwareness";
 import { generateRoomId } from "@/lib/room";
 import OnlineUsers from "@/components/OnlineUsers";
 import ProblemStatement from "@/components/ProblemStatement";
+import SessionTimer from "@/components/SessionTimer";
 
 type Language = "javascript" | "python";
 
@@ -230,6 +231,8 @@ export default function Home() {
             {copied ? "Copied!" : "Copy Link"}
           </button>
         </div>
+
+        <SessionTimer roomId={roomId} />
 
         <span className="text-sm">{connected ? "Connected" : "Disconnected"}
         </span>

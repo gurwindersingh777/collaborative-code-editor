@@ -3,6 +3,7 @@ import type { Server as HttpServer } from "node:http";
 import * as Y from "yjs";
 import { getRoomDocument } from "../src/yjs/roomDocuments.js";
 import { addActiveUser, getActiveUsers, removeActiveUser } from "./rooms/activeUsers.js";
+import { getTimer, pauseTimer, resetTimer, startTimer } from "./util/timer.js";
 
 let ioInstance: Server | null = null;
 const awarenessClients = new Map<string, { roomId: string; clientId: number }>();
@@ -18,7 +19,6 @@ export function createSocketServer(httpServer: HttpServer) {
   ioInstance = io;
 
   io.on("connection", (socket) => {
-    console.log(`Socket connection: ${socket.id}`);
 
     socket.on("join-room", ({ roomId, user }: { roomId: string; user: { name: string; color: string } }) => {
       socket.join(roomId);
@@ -37,6 +37,7 @@ export function createSocketServer(httpServer: HttpServer) {
       socket.to(roomId).emit("user-joined", { socketId: socket.id });
       socket.to(roomId).emit("awareness-request", { roomId: roomId });
     });
+
 
     socket.on("yjs-update", ({ roomId, update }: { roomId: string; update: number[] }) => {
       const ydoc = getRoomDocument(roomId);
@@ -68,14 +69,33 @@ export function createSocketServer(httpServer: HttpServer) {
         socket.to(roomId).emit("awareness-remove", { roomId, clientId })
         awarenessClients.delete(socket.id)
       }
-
-      console.log(`Socket disconnected: ${socket.id}`);
     });
 
 
     socket.on("awareness-update", ({ roomId, clientId, update }: { roomId: string; clientId: number; update: number[] }) => {
       awarenessClients.set(socket.id, { roomId, clientId });
       socket.to(roomId).emit("awareness-update", { roomId, update });
+    });
+
+    // Timer
+
+    socket.on("request-timer-state", (roomId: string) => {
+      socket.emit("timer-state", getTimer(roomId));
+    });
+
+    socket.on("start-timer", (roomId: string) => {
+      const timer = startTimer(roomId);
+      io.to(roomId).emit("timer-state", timer);
+    });
+
+    socket.on("pause-timer", (roomId: string) => {
+      const timer = pauseTimer(roomId);
+      io.to(roomId).emit("timer-state", timer);
+    });
+
+    socket.on("reset-timer", (roomId: string) => {
+      const timer = resetTimer(roomId);
+      io.to(roomId).emit("timer-state", timer);
     });
 
   });
