@@ -143,9 +143,22 @@ export default function Home() {
     };
   }, []);
 
+  // Language
+  useEffect(() => {
+    function handleLanguageState(nextLanguage: Language) {
+      setLanguage(nextLanguage);
+      setOutput("");
+    }
+
+    socket.on("language-state", handleLanguageState);
+
+    return () => {
+      socket.off("language-state", handleLanguageState);
+    };
+  }, [])
+
   function handleLanguageChange(newLanguage: Language) {
-    setLanguage(newLanguage);
-    setOutput("");
+    socket.emit("set-language", roomId, newLanguage);
   }
 
   async function handleRun() {

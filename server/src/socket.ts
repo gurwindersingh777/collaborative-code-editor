@@ -4,6 +4,7 @@ import * as Y from "yjs";
 import { getRoomDocument } from "../src/yjs/roomDocuments.js";
 import { addActiveUser, getActiveUsers, removeActiveUser } from "./rooms/activeUsers.js";
 import { getTimer, pauseTimer, resetTimer, startTimer } from "./util/timer.js";
+import { getLanguage, setLanguage } from "./util/language.js";
 
 let ioInstance: Server | null = null;
 const awarenessClients = new Map<string, { roomId: string; clientId: number }>();
@@ -23,6 +24,7 @@ export function createSocketServer(httpServer: HttpServer) {
     socket.on("join-room", ({ roomId, user }: { roomId: string; user: { name: string; color: string } }) => {
       socket.join(roomId);
       socketRooms.set(socket.id, roomId);
+      socket.emit("language-state", getLanguage(roomId));
 
       addActiveUser(roomId, {
         socketId: socket.id,
@@ -97,6 +99,13 @@ export function createSocketServer(httpServer: HttpServer) {
       const timer = resetTimer(roomId);
       io.to(roomId).emit("timer-state", timer);
     });
+
+    // Language
+
+    socket.on("set-language", (roomId: string, language: "javascript" | "python") => {
+      const nextLanguage = setLanguage(roomId, language);
+      io.to(roomId).emit("language-state", nextLanguage)
+    })
 
   });
 
