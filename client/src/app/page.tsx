@@ -13,6 +13,7 @@ import { generateRoomId } from "@/lib/room";
 import OnlineUsers from "@/components/OnlineUsers";
 import ProblemStatement from "@/components/ProblemStatement";
 import SessionTimer from "@/components/SessionTimer";
+import Chat from "@/components/Chat";
 
 type Language = "javascript" | "python";
 
@@ -214,20 +215,9 @@ export default function Home() {
     return (
       <main className="flex h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <h1 className="text-2xl font-semibold">
-            Collaborative Code Editor
-          </h1>
-
-          <p className="text-sm text-gray-500">
-            Create a room to start collaborating.
-          </p>
-
-          <button
-            onClick={handleCreateRoom}
-            className="rounded border px-4 py-2"
-          >
-            Create Room
-          </button>
+          <h1 className="text-2xl font-semibold"> Collaborative Code Editor</h1>
+          <p className="text-sm text-gray-500">Create a room to start collaborating.</p>
+          <button onClick={handleCreateRoom} className="rounded border px-4 py-2">Create Room</button>
         </div>
       </main>
     );
@@ -288,8 +278,12 @@ export default function Home() {
         </div>
 
         <div className="border-l p-4">
-          <h2 className="mb-3 font-semibold">Output</h2>
-          <pre className="whitespace-pre-wrap text-sm">{output || "Output will appear here."}</pre>
+          <div className="h-1/2 border-b pb-4">
+            <h2 className="mb-3 font-semibold">Output</h2>
+            <pre className="whitespace-pre-wrap text-sm">{output || "Output will appear here."}</pre>
+          </div>
+
+          <div className="h-1/2 pt-4"><Chat roomId={roomId} user={user} /></div>
         </div>
       </section>
     </main>

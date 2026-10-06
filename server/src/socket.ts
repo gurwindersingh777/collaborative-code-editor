@@ -5,6 +5,7 @@ import { getRoomDocument } from "../src/yjs/roomDocuments.js";
 import { addActiveUser, getActiveUsers, removeActiveUser } from "./rooms/activeUsers.js";
 import { getTimer, pauseTimer, resetTimer, startTimer } from "./util/timer.js";
 import { getLanguage, setLanguage } from "./util/language.js";
+import { ChatMessage } from "./types/chat.js";
 
 let ioInstance: Server | null = null;
 const awarenessClients = new Map<string, { roomId: string; clientId: number }>();
@@ -105,6 +106,25 @@ export function createSocketServer(httpServer: HttpServer) {
     socket.on("set-language", (roomId: string, language: "javascript" | "python") => {
       const nextLanguage = setLanguage(roomId, language);
       io.to(roomId).emit("language-state", nextLanguage)
+    })
+
+    // Chat
+
+    socket.on("send-chat-message", ({ roomId, message, user, }: {
+      roomId: string; message: string; user: { name: string, color: string; };
+    }) => {
+      const trimmedMessage = message.trim();
+      if (!trimmedMessage) return;
+
+      const chatMessage: ChatMessage = {
+        id: `${socket.id}-${Date.now()}`,
+        roomId,
+        user,
+        message: trimmedMessage,
+        timestamp: Date.now()
+      }
+
+      io.to(roomId).emit("chat-message", chatMessage);
     })
 
   });
