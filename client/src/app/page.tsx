@@ -35,6 +35,7 @@ export default function Home() {
   const [awareness, setAwareness] = useState<Awareness | null>(null);
   const [copied, setCopied] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
+  const [role, setRole] = useState<"interviewer" | "candidate" | null>(null);
 
   // temporary user
   const [user] = useState(() => createLocalUser(`User-${Math.floor(Math.random() * 1000)}`,))
@@ -158,6 +159,21 @@ export default function Home() {
     };
   }, [])
 
+  // Role
+  useEffect(() => {
+    function handleInterviewRole(
+      nextRole: "interviewer" | "candidate"
+    ) {
+      setRole(nextRole);
+    }
+
+    socket.on("interview-role", handleInterviewRole);
+
+    return () => {
+      socket.off("interview-role", handleInterviewRole);
+    };
+  }, []);
+
   function handleLanguageChange(newLanguage: Language) {
     socket.emit("set-language", roomId, newLanguage);
   }
@@ -234,6 +250,12 @@ export default function Home() {
             {copied ? "Copied!" : "Copy Link"}
           </button>
         </div>
+        
+        {role && (
+          <div className="rounded border px-3 py-1 text-sm">
+            {role === "interviewer" ? "Interviewer" : "Candidate"}
+          </div>
+        )}
 
         <SessionTimer roomId={roomId} />
 

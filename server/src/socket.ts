@@ -6,6 +6,7 @@ import { addActiveUser, getActiveUsers, removeActiveUser } from "./rooms/activeU
 import { getTimer, pauseTimer, resetTimer, startTimer } from "./util/timer.js";
 import { getLanguage, setLanguage } from "./util/language.js";
 import { ChatMessage } from "./types/chat.js";
+import { assignRole, removeRole } from "./util/role.js";
 
 let ioInstance: Server | null = null;
 const awarenessClients = new Map<string, { roomId: string; clientId: number }>();
@@ -24,7 +25,11 @@ export function createSocketServer(httpServer: HttpServer) {
 
     socket.on("join-room", ({ roomId, user }: { roomId: string; user: { name: string; color: string } }) => {
       socket.join(roomId);
+
+      const role = assignRole(roomId, socket.id);
+
       socketRooms.set(socket.id, roomId);
+      socket.emit("interview-role", role);
       socket.emit("language-state", getLanguage(roomId));
 
       addActiveUser(roomId, {
@@ -52,6 +57,7 @@ export function createSocketServer(httpServer: HttpServer) {
 
 
     socket.on("leave-room", (roomId: string) => {
+      removeRole(roomId, socket.id);
       socket.leave(roomId);
       removeActiveUser(roomId, socket.id);
       socketRooms.delete(socket.id);
@@ -64,6 +70,7 @@ export function createSocketServer(httpServer: HttpServer) {
 
       if (roomId) {
         removeActiveUser(roomId, socket.id);
+        removeRole(roomId, socket.id);
         socketRooms.delete(socket.id);
       }
 
