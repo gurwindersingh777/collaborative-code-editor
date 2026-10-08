@@ -25,6 +25,12 @@ type ExecutionResult = {
   status?: string;
 };
 
+type LocalUser = {
+  id: string;
+  name: string;
+  color: string;
+};
+
 export default function Home() {
   const [language, setLanguage] = useState<Language>("javascript");
   const [output, setOutput] = useState("");
@@ -36,10 +42,24 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [role, setRole] = useState<"interviewer" | "candidate" | null>(null);
+  const [interviewerMode, setInterviewerMode] = useState(false);
 
   // temporary user
-  const [user] = useState(() => createLocalUser(`User-${Math.floor(Math.random() * 1000)}`,))
+  const [user, setUser] = useState<LocalUser | null>(null);
 
+  useEffect(() => {
+    let userId = localStorage.getItem("editor-user-id");
+
+    if (!userId) {
+      userId = crypto.randomUUID();
+      localStorage.setItem("editor-user-id", userId);
+    }
+
+    const localUser = createLocalUser(`User-${Math.floor(Math.random() * 1000)}`);
+    setUser({ ...localUser, id: userId });
+  }, []);
+
+  // Room Id
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const room = params.get("room");
@@ -47,8 +67,9 @@ export default function Home() {
     if (room) { setRoomId(room); }
   }, []);
 
+  // Yjs
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !user) return;
 
     const { ydoc, ytext, problem, awareness } = createYjsDocument();
 
@@ -74,12 +95,14 @@ export default function Home() {
     };
   }, [roomId, user]);
 
+  // Socket
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !user) return;
 
     function handleConnect() {
       setConnected(true);
-      socket.emit("join-room", { roomId, user: { name: user.name, color: user.color } });
+      socket.emit("join-room", { roomId, user: { id: user.id, name: user.name, color: user.color } });
+      socket.emit("request-interviewer-mode-state", roomId);
     }
 
     function handleDisconnect() {
@@ -99,8 +122,9 @@ export default function Home() {
       socket.off("disconnect", handleDisconnect);
       socket.disconnect();
     };
-  }, [roomId]);
+  }, [roomId, user]);
 
+  // Execution
   useEffect(() => {
     function handleExecutionResult(result: ExecutionResult) {
 
@@ -174,6 +198,19 @@ export default function Home() {
     };
   }, []);
 
+  // Interview Mode
+  useEffect(() => {
+    function handleInterviewerModeState(enabled: boolean) {
+      setInterviewerMode(enabled);
+    }
+
+    socket.on("interviewer-mode-state", handleInterviewerModeState);
+
+    return () => {
+      socket.off("interviewer-mode-state", handleInterviewerModeState);
+    };
+  }, []);
+
   function handleLanguageChange(newLanguage: Language) {
     socket.emit("set-language", roomId, newLanguage);
   }
@@ -227,6 +264,11 @@ export default function Home() {
     setTimeout(() => { setCopied(false) }, 2000);
   }
 
+  function handleInterviewerModeChange(enabled: boolean) {
+    if (role !== "interviewer") return;
+    socket.emit("request-interviewer-mode", { roomId, enabled });
+  }
+
   if (!roomId) {
     return (
       <main className="flex h-screen items-center justify-center">
@@ -250,11 +292,22 @@ export default function Home() {
             {copied ? "Copied!" : "Copy Link"}
           </button>
         </div>
-        
+
         {role && (
           <div className="rounded border px-3 py-1 text-sm">
             {role === "interviewer" ? "Interviewer" : "Candidate"}
           </div>
+        )}
+
+        {role === "interviewer" && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={interviewerMode}
+              onChange={(event) => handleInterviewerModeChange(event.target.checked)}
+            />
+            Interviewer Mode
+          </label>
         )}
 
         <SessionTimer roomId={roomId} />
@@ -305,7 +358,12 @@ export default function Home() {
             <pre className="whitespace-pre-wrap text-sm">{output || "Output will appear here."}</pre>
           </div>
 
-          <div className="h-1/2 pt-4"><Chat roomId={roomId} user={user} /></div>
+          <div className="h-1/2 pt-4">
+            <Chat
+              roomId={roomId}
+              user={{ name: user.name, color: user.color }}
+            />
+          </div>
         </div>
       </section>
     </main>

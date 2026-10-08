@@ -1,34 +1,60 @@
-export type InterviewRole = "interviewer" | "candidate"
+export type InterviewRole = "interviewer" | "candidate";
 
-const roomRoles = new Map<string, Map<string, InterviewRole>>();
+type UserRole = {
+  userId: string;
+  socketId: string;
+  role: InterviewRole;
+};
 
-export function getRoomRoles(roomId: string) {
-  return roomRoles.get(roomId) ?? new Map<string, InterviewRole>();
-}
+const roomRoles = new Map<string, Map<string, UserRole>>();
 
-export function assignRole(roomId: string, socketId: string): InterviewRole {
+export function assignRole(roomId: string, userId: string, socketId: string): InterviewRole {
   let roles = roomRoles.get(roomId);
 
   if (!roles) {
-    roles = new Map<string, InterviewRole>();
+    roles = new Map<string, UserRole>();
     roomRoles.set(roomId, roles);
   }
 
-  // First user in the room becomes the interviewer.
-  if (roles.size === 0) {
-    roles.set(socketId, "interviewer");
-    return "interviewer";
+  // User already has a role.
+  // This happens when the user refreshes/reconnects.
+  const existingRole = roles.get(userId);
+
+  if (existingRole) {
+    existingRole.socketId = socketId;
+    return existingRole.role;
   }
 
-  roles.set(socketId, "candidate");
-  return "candidate";
+  // First participant becomes interviewer.
+  const hasInterviewer = Array.from(roles.values()).some((entry) => entry.role === "interviewer");
+
+  const role: InterviewRole = hasInterviewer ? "candidate" : "interviewer";
+
+  roles.set(userId, { userId, socketId, role, });
+
+  return role;
 }
 
+export function getRole(roomId: string, userId: string): InterviewRole | null {
+  const roles = roomRoles.get(roomId);
 
-export function removeRole(roomId: string, socketId: string) {
+  if (!roles) return null;
+
+  return roles.get(userId)?.role ?? null;
+}
+
+export function isInterviewer(roomId: string, userId: string): boolean {
+  return getRole(roomId, userId) === "interviewer";
+}
+
+export function removeRole(roomId: string, userId: string): void {
   const roles = roomRoles.get(roomId);
 
   if (!roles) return;
-  roles.delete(socketId);
-  if (roles.size === 0) roomRoles.delete(roomId);
+
+  const existingRole = roles.get(userId);
+
+  if (existingRole) {
+    existingRole.socketId = "";
+  }
 }

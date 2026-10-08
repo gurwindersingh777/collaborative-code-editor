@@ -6,11 +6,13 @@ import { addActiveUser, getActiveUsers, removeActiveUser } from "./rooms/activeU
 import { getTimer, pauseTimer, resetTimer, startTimer } from "./util/timer.js";
 import { getLanguage, setLanguage } from "./util/language.js";
 import { ChatMessage } from "./types/chat.js";
-import { assignRole, removeRole } from "./util/role.js";
+import { assignRole, isInterviewer, removeRole } from "./util/role.js";
+import { getInterviewerMode, setInterviewerMode } from "./util/interviewerMode.js";
 
 let ioInstance: Server | null = null;
 const awarenessClients = new Map<string, { roomId: string; clientId: number }>();
 const socketRooms = new Map<string, string>();
+const socketUsers = new Map<string, string>();
 
 export function createSocketServer(httpServer: HttpServer) {
   const io = new Server(httpServer, {
@@ -23,12 +25,14 @@ export function createSocketServer(httpServer: HttpServer) {
 
   io.on("connection", (socket) => {
 
-    socket.on("join-room", ({ roomId, user }: { roomId: string; user: { name: string; color: string } }) => {
+    socket.on("join-room", ({ roomId, user }: { roomId: string; user: { id: string; name: string; color: string } }) => {
       socket.join(roomId);
 
-      const role = assignRole(roomId, socket.id);
+      const role = assignRole(roomId, user.id, socket.id);
 
       socketRooms.set(socket.id, roomId);
+      socketUsers.set(socket.id, user.id);
+
       socket.emit("interview-role", role);
       socket.emit("language-state", getLanguage(roomId));
 
@@ -57,10 +61,10 @@ export function createSocketServer(httpServer: HttpServer) {
 
 
     socket.on("leave-room", (roomId: string) => {
-      removeRole(roomId, socket.id);
       socket.leave(roomId);
       removeActiveUser(roomId, socket.id);
       socketRooms.delete(socket.id);
+      socketUsers.delete(socket.id);
     });
 
 
@@ -70,14 +74,15 @@ export function createSocketServer(httpServer: HttpServer) {
 
       if (roomId) {
         removeActiveUser(roomId, socket.id);
-        removeRole(roomId, socket.id);
         socketRooms.delete(socket.id);
       }
 
+      socketUsers.delete(socket.id);
+
       if (awarenessClient) {
         const { roomId, clientId } = awarenessClient;
-        socket.to(roomId).emit("awareness-remove", { roomId, clientId })
-        awarenessClients.delete(socket.id)
+        socket.to(roomId).emit("awareness-remove", { roomId, clientId });
+        awarenessClients.delete(socket.id);
       }
     });
 
@@ -133,6 +138,23 @@ export function createSocketServer(httpServer: HttpServer) {
 
       io.to(roomId).emit("chat-message", chatMessage);
     })
+
+    // Interviewer Mode
+
+    socket.on("request-interviewer-mode", ({ roomId, enabled }: { roomId: string; enabled: boolean }) => {
+      const userId = socketUsers.get(socket.id);
+
+      if (!userId) return;
+      if (!isInterviewer(roomId, userId)) return;
+
+      const nextMode = setInterviewerMode(roomId, enabled);
+      io.to(roomId).emit("interviewer-mode-state", nextMode);
+    },
+    );
+
+    socket.on("request-interviewer-mode-state", (roomId: string) => {
+      socket.emit("interviewer-mode-state", getInterviewerMode(roomId));
+    });
 
   });
 
