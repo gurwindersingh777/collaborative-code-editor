@@ -48,15 +48,27 @@ export default function Home() {
   const [user, setUser] = useState<LocalUser | null>(null);
 
   useEffect(() => {
-    let userId = localStorage.getItem("editor-user-id");
+    const storageKey = "editor-user";
+    const storedUser = sessionStorage.getItem(storageKey);
 
-    if (!userId) {
-      userId = crypto.randomUUID();
-      localStorage.setItem("editor-user-id", userId);
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser) as LocalUser;
+
+        if (parsedUser.id && parsedUser.name && parsedUser.color) {
+          setUser(parsedUser);
+          return;
+        }
+      } catch {
+        // Generate a new identity if stored data is invalid.
+      }
     }
 
-    const localUser = createLocalUser(`User-${Math.floor(Math.random() * 1000)}`);
-    setUser({ ...localUser, id: userId });
+    const generatedUser = createLocalUser(`User-${Math.floor(Math.random() * 1000)}`);
+
+    const newUser: LocalUser = { ...generatedUser, id: crypto.randomUUID() };
+    sessionStorage.setItem(storageKey, JSON.stringify(newUser));
+    setUser(newUser);
   }, []);
 
   // Room Id
@@ -99,10 +111,18 @@ export default function Home() {
   useEffect(() => {
     if (!roomId || !user) return;
 
+    const currentUser = user;
+    const currentRoomId = roomId;
+
     function handleConnect() {
       setConnected(true);
-      socket.emit("join-room", { roomId, user: { id: user.id, name: user.name, color: user.color } });
-      socket.emit("request-interviewer-mode-state", roomId);
+
+      socket.emit("join-room", {
+        roomId: currentRoomId,
+        user: { id: currentUser.id, name: currentUser.name, color: currentUser.color },
+      });
+
+      socket.emit("request-interviewer-mode-state", currentRoomId);
     }
 
     function handleDisconnect() {
@@ -111,13 +131,13 @@ export default function Home() {
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
-
     socket.connect();
 
     return () => {
       if (socket.connected) {
-        socket.emit("leave-room", roomId);
+        socket.emit("leave-room", currentRoomId);
       }
+
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
       socket.disconnect();
@@ -281,6 +301,14 @@ export default function Home() {
     );
   }
 
+  if (!user) {
+    return (
+      <main className="flex h-screen items-center justify-center">
+        Preparing your session...
+      </main>
+    );
+  }
+
   return (
     <main className="flex h-screen flex-col">
       <header className="flex items-center justify-between border-b p-4">
@@ -343,8 +371,16 @@ export default function Home() {
             <div className="h-full flex">
 
               <div className="flex-1 min-w-0">
-                <ProblemStatement problem={problem} />
-                <CodeEditor language={language} ytext={ytext} awareness={awareness} />
+                <ProblemStatement
+                  problem={problem}
+                  isReadOnly={interviewerMode && role !== "interviewer"}
+                />
+                <CodeEditor
+                  language={language}
+                  ytext={ytext}
+                  awareness={awareness}
+                  isReadOnly={interviewerMode && role !== "interviewer"}
+                />
               </div>
 
               <OnlineUsers awareness={awareness} />

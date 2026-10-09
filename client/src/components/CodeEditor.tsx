@@ -11,9 +11,10 @@ type CodeEditorProps = {
   language: string;
   ytext: Y.Text;
   awareness: Awareness;
+  isReadOnly: boolean;
 };
 
-export default function CodeEditor({ language, ytext, awareness }: CodeEditorProps) {
+export default function CodeEditor({ language, ytext, awareness, isReadOnly }: CodeEditorProps) {
   const bindingRef = useRef<MonacoBinding | null>(null);
   const cursorListenerRef = useRef<{ dispose: () => void } | null>(null);
   const selectionListenerRef = useRef<{ dispose: () => void } | null>(null);
@@ -173,6 +174,7 @@ export default function CodeEditor({ language, ytext, awareness }: CodeEditorPro
       theme="vs-dark"
       onMount={handleEditorMount}
       options={{
+        readOnly: isReadOnly,
         minimap: { enabled: false },
         fontSize: 14,
         lineHeight: 22,

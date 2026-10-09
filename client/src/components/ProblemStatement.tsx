@@ -6,9 +6,10 @@ import { useEffect, useState } from "react";
 
 type ProblemStatementProps = {
   problem: Y.Text;
+  isReadOnly: boolean;
 };
 
-export default function ProblemStatement({ problem }: ProblemStatementProps) {
+export default function ProblemStatement({ problem, isReadOnly }: ProblemStatementProps) {
   const [value, setValue] = useState(problem.toString());
 
   useEffect(() => {
@@ -39,9 +40,11 @@ export default function ProblemStatement({ problem }: ProblemStatementProps) {
 
         <textarea
           value={value}
+          readOnly={isReadOnly}
           onChange={handleChange}
           placeholder="Write the interview problem in Markdown..."
-          className="min-h-75 w-full rounded border p-3 font-mono text-sm"
+          className={`min-h-75 w-full rounded border p-3 font-mono text-sm ${isReadOnly ? "cursor-not-allowed bg-gray-100 text-gray-600" : ""
+            }`}
         />
       </div>
 
