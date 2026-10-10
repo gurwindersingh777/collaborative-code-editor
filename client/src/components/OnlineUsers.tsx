@@ -45,7 +45,7 @@ export default function OnlineUsers({ awareness }: OnlineUsersProps) {
   }, [awareness]);
 
   return (
-    <aside className="w-55 shrink-0 border-l border-zinc-700 bg-zinc-900 p-4">
+    <aside className="w-35 shrink-0 border border-zinc-700 bg-zinc-900 p-4">
       <h2 className="mb-4 text-sm font-semibold text-zinc-200">👥 Online ({users.length})</h2>
 
       <div className="flex flex-col gap-2.5">

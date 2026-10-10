@@ -17,6 +17,8 @@ import Chat from "@/components/Chat";
 
 type Language = "javascript" | "python";
 
+type RightTab = "problem" | "output" | "chat";
+
 type ExecutionResult = {
   success: boolean;
   stdout: string;
@@ -43,6 +45,7 @@ export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
   const [role, setRole] = useState<"interviewer" | "candidate" | null>(null);
   const [interviewerMode, setInterviewerMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<RightTab>("problem");
 
   // temporary user
   const [user, setUser] = useState<LocalUser | null>(null);
@@ -250,6 +253,7 @@ export default function Home() {
 
     setOutput("Running...");
     setIsRunning(true);
+    setActiveTab("output");
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/execute`, {
@@ -311,45 +315,60 @@ export default function Home() {
 
   return (
     <main className="flex h-screen flex-col">
-      <header className="flex items-center justify-between border-b p-4">
-        <h1 className="text-xl font-semibold">Collaborative Code Editor</h1>
+      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b px-4 py-3">
+        {/* LEFT: title + room */}
+        <div className="flex items-center gap-4">
+          <h1 className="text-lg font-semibold whitespace-nowrap">
+            Collaborative Code Editor
+          </h1>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Room: {roomId}</span>
-          <button onClick={handleCopyRoomLink} className="rounded border px-3 py-1 text-sm">
-            {copied ? "Copied!" : "Copy Link"}
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Room: {roomId}</span>
+            <button
+              onClick={handleCopyRoomLink}
+              className="rounded border px-3 py-1 text-sm hover:bg-gray-500/10"
+            >
+              {copied ? "Copied!" : "Copy Link"}
+            </button>
+          </div>
         </div>
 
-        {role && (
-          <div className="rounded border px-3 py-1 text-sm">
-            {role === "interviewer" ? "Interviewer" : "Candidate"}
-          </div>
-        )}
+        {/* CENTER: interview session controls */}
+        <div className="flex items-center gap-4">
+          {role && (
+            <span className="rounded-full border px-3 py-1 text-xs font-medium">
+              {role === "interviewer" ? "Interviewer" : "Candidate"}
+            </span>
+          )}
 
-        {role === "interviewer" && (
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={interviewerMode}
-              onChange={(event) => handleInterviewerModeChange(event.target.checked)}
-            />
-            Interviewer Mode
-          </label>
-        )}
+          {role === "interviewer" && (
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={interviewerMode}
+                onChange={(event) => handleInterviewerModeChange(event.target.checked)}
+              />
+              Interviewer Mode
+            </label>
+          )}
 
-        <SessionTimer roomId={roomId} />
+          <SessionTimer roomId={roomId} />
+        </div>
 
-        <span className="text-sm">{connected ? "Connected" : "Disconnected"}
-        </span>
-
+        {/* RIGHT: status + language + run */}
         <div className="flex items-center gap-3">
+          <span className="flex items-center gap-2 text-sm text-gray-400">
+            <span
+              className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-500"
+                }`}
+            />
+            {connected ? "Connected" : "Disconnected"}
+          </span>
+
           <select
             value={language}
-            onChange={(event) =>
-              handleLanguageChange(event.target.value as Language)
-            }
-            className="rounded border px-3 py-2"
+            onChange={(event) => handleLanguageChange(event.target.value as Language)}
+            className="rounded border px-3 py-1.5 text-sm"
           >
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
@@ -358,23 +377,21 @@ export default function Home() {
           <button
             onClick={handleRun}
             disabled={isRunning}
-            className="rounded border px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded border px-4 py-1.5 text-sm font-medium hover:bg-gray-500/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isRunning ? "Running..." : "Run"}
           </button>
         </div>
       </header>
 
-      <section className="grid min-h-0 flex-1 grid-cols-2">
-        <div className="min-h-0">
+      <section className="grid min-h-0 flex-1 grid-cols-3">
+        {/* LEFT: editor  */}
+        <div className="col-span-2 min-h-0">
           {ytext && problem && awareness && (
             <div className="h-full flex">
+              <OnlineUsers awareness={awareness} />
 
               <div className="flex-1 min-w-0">
-                <ProblemStatement
-                  problem={problem}
-                  isReadOnly={interviewerMode && role !== "interviewer"}
-                />
                 <CodeEditor
                   language={language}
                   ytext={ytext}
@@ -382,23 +399,58 @@ export default function Home() {
                   isReadOnly={interviewerMode && role !== "interviewer"}
                 />
               </div>
-
-              <OnlineUsers awareness={awareness} />
             </div>
           )}
         </div>
 
-        <div className="border-l p-4">
-          <div className="h-1/2 border-b pb-4">
-            <h2 className="mb-3 font-semibold">Output</h2>
-            <pre className="whitespace-pre-wrap text-sm">{output || "Output will appear here."}</pre>
+        {/* RIGHT: tabs  */}
+        <div className="flex min-h-0 flex-col border-l">
+          {/* Tab bar */}
+          <div className="flex border-b">
+            {(
+              [
+                { id: "problem", label: "Problem" },
+                { id: "output", label: "Output" },
+                { id: "chat", label: "Chat" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2 text-sm ${activeTab === tab.id
+                  ? "border-b-2 border-current font-semibold"
+                  : "text-gray-500"
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          <div className="h-1/2 pt-4">
-            <Chat
-              roomId={roomId}
-              user={{ name: user.name, color: user.color }}
-            />
+          {/* Tab content */}
+          <div className="min-h-0 flex-1 overflow-auto p-4">
+            <div className={activeTab === "problem" ? "h-full" : "hidden"}>
+              {problem && (
+                <ProblemStatement
+                  problem={problem}
+                  isReadOnly={interviewerMode && role !== "interviewer"}
+                />
+              )}
+            </div>
+
+            <div className={activeTab === "output" ? "h-full" : "hidden"}>
+              <h2 className="mb-3 font-semibold">Output</h2>
+              <pre className="whitespace-pre-wrap text-sm">
+                {output || "Output will appear here."}
+              </pre>
+            </div>
+
+            <div className={activeTab === "chat" ? "h-full" : "hidden"}>
+              <Chat
+                roomId={roomId}
+                user={{ name: user.name, color: user.color }}
+              />
+            </div>
           </div>
         </div>
       </section>
