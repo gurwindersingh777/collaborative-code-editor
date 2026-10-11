@@ -6,7 +6,7 @@ import { createYjsDocument } from "@/lib/yjs";
 import { setupYjsSync } from "@/lib/yjsSync";
 import type * as Y from "yjs";
 import { useEffect, useState } from "react";
-import { Awareness } from "y-protocols/awareness.js";
+import type { Awareness } from "y-protocols/awareness.js";
 import { createLocalUser, setupAwareness } from "@/lib/presence";
 import { setupAwarenessSync } from "@/lib/yjsAwareness";
 import { generateRoomId } from "@/lib/room";
@@ -266,11 +266,10 @@ export default function Home() {
       setIsRunning(false);
 
       if (!response.ok) {
-        setIsRunning(false);
         setOutput(result.error || "Execution request failed.");
         return;
       }
-    } catch (error) {
+    } catch {
       setIsRunning(false);
       setOutput("Unable to connect to execution service.");
     }

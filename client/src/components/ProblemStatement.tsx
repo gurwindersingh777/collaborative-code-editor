@@ -3,6 +3,7 @@
 import ReactMarkdown from "react-markdown";
 import type * as Y from "yjs";
 import { useEffect, useState } from "react";
+import { applyTextDiff } from "@/lib/yjsText";
 
 type ProblemStatementProps = {
   problem: Y.Text;
@@ -25,12 +26,7 @@ export default function ProblemStatement({ problem, isReadOnly }: ProblemStateme
   }, [problem]);
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const nextValue = event.target.value;
-
-    problem.doc?.transact(() => {
-      problem.delete(0, problem.length);
-      problem.insert(0, nextValue);
-    });
+    applyTextDiff(problem, event.target.value);
   };
 
   return (

@@ -14,6 +14,8 @@ type CodeEditorProps = {
   isReadOnly: boolean;
 };
 
+const SAFE_COLOR = /^#[0-9a-fA-F]{6}$/;
+
 export default function CodeEditor({ language, ytext, awareness, isReadOnly }: CodeEditorProps) {
   const bindingRef = useRef<MonacoBinding | null>(null);
   const cursorListenerRef = useRef<{ dispose: () => void } | null>(null);
@@ -121,7 +123,10 @@ export default function CodeEditor({ language, ytext, awareness, isReadOnly }: C
 
     function updateRemoteStyles() {
       styleElement.textContent = `${Array.from(awareness.getStates().entries())
-        .filter(([clientId, state]) => clientId !== awareness.clientID && state.user,)
+        .filter(([clientId, state]) =>
+          clientId !== awareness.clientID &&
+          state.user &&
+          SAFE_COLOR.test(state.user.color))
         .map(([clientId, state]) => `
           .remote-cursor-${clientId} {
             border-left: 2px solid ${state.user.color};
