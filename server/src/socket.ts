@@ -8,6 +8,7 @@ import { getLanguage, setLanguage } from "./util/language.js";
 import { ChatMessage } from "./types/chat.js";
 import { assignRole, isInterviewer } from "./util/role.js";
 import { getInterviewerMode, setInterviewerMode } from "./util/interviewerMode.js";
+import { ensureRoom } from "./services/roomPersistence.js";
 
 const MAX_ROOM_ID_LENGTH = 64;
 const MAX_CHAT_LENGTH = 500;
@@ -33,7 +34,7 @@ export function createSocketServer(httpServer: HttpServer) {
 
   io.on("connection", (socket) => {
 
-    socket.on("join-room", ({ roomId, user }: { roomId: string; user: { id: string; name: string; color: string } }) => {
+    socket.on("join-room", async ({ roomId, user }: { roomId: string; user: { id: string; name: string; color: string } }) => {
       // Validate input
       if (typeof roomId != "string" || !roomId || roomId.length > MAX_ROOM_ID_LENGTH) return;
       if (!user || typeof user.id != "string" || typeof user.name !== "string" || typeof user.color !== "string") return;
@@ -49,32 +50,54 @@ export function createSocketServer(httpServer: HttpServer) {
       socketRooms.set(socket.id, roomId);
       socketUsers.set(socket.id, user.id);
 
-      const role = assignRole(roomId, user.id, socket.id);
-      addActiveUser(roomId, { socketId: socket.id, name: user.name, color: user.color })
+      try {
+        await ensureRoom(roomId);
+        const ydoc = await getRoomDocument(roomId);
 
-      socket.emit("interview-role", role);
-      socket.emit("language-state", getLanguage(roomId));
-      socket.emit("timer-state", getTimer(roomId));
-      socket.emit("interviewer-mode-state", getInterviewerMode(roomId));
+        if (socketRooms.get(socket.id) !== roomId || !socket.rooms.has(roomId)) return;
 
-      const ydoc = getRoomDocument(roomId);
-      const state = Y.encodeStateAsUpdate(ydoc);
-      socket.emit("yjs-sync", { roomId: roomId, update: Array.from(state) });
-      socket.to(roomId).emit("awareness-request", { roomId: roomId });
+        const role = assignRole(roomId, user.id, socket.id);
+
+        addActiveUser(roomId, { socketId: socket.id, name: user.name, color: user.color });
+
+        socket.emit("interview-role", role);
+        socket.emit("language-state", getLanguage(roomId));
+        socket.emit("timer-state", getTimer(roomId));
+        socket.emit("interviewer-mode-state", getInterviewerMode(roomId));
+
+        const state = Y.encodeStateAsUpdate(ydoc);
+
+        socket.emit("yjs-sync", { roomId, update: Array.from(state) });
+
+        socket.to(roomId).emit("awareness-request", { roomId });
+      } catch (error) {
+        console.error(`Failed to initialize room ${roomId}:`, error);
+
+        // Clean up only if this is still the socket's current room.
+        if (socketRooms.get(socket.id) === roomId) {
+          socket.leave(roomId);
+          socketRooms.delete(socket.id);
+          socketUsers.delete(socket.id);
+          removeActiveUser(roomId, socket.id);
+        }
+      }
     });
 
 
-    socket.on("yjs-update", ({ roomId, update }: { roomId: string; update: number[] }) => {
+    socket.on("yjs-update", async ({ roomId, update }: { roomId: string; update: number[] }) => {
       if (!inRoom(socket, roomId) || !Array.isArray(update)) return;
+      if (!update.every((value) => Number.isInteger(value) && value >= 0 && value <= 255)) return;
 
       try {
-        const ydoc = getRoomDocument(roomId);
+        const ydoc = await getRoomDocument(roomId);
+        if (!inRoom(socket, roomId) || socketRooms.get(socket.id) !== roomId) return;
         const uint8Update = new Uint8Array(update);
         Y.applyUpdate(ydoc, uint8Update, "remote");
       } catch (error) {
         console.warn("Rejected invalid Yjs update:", error);
         return;
       }
+
       socket.to(roomId).emit("yjs-update", { roomId, update });
     });
 
