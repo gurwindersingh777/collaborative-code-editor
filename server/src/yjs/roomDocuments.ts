@@ -1,5 +1,6 @@
 import * as Y from "yjs";
 import { loadLatestSnapshot } from "../services/roomPersistence.js";
+import { registerRoomDocument } from "../services/roomAutosave.js";
 
 const roomDocuments = new Map<string, Y.Doc>();
 const roomInitializations = new Map<string, Promise<Y.Doc>>();
@@ -25,6 +26,7 @@ export async function getRoomDocument(roomId: string): Promise<Y.Doc> {
         console.log(`Created new Yjs document for room ${roomId}`);
       }
 
+      registerRoomDocument(roomId, ydoc)
       roomDocuments.set(roomId, ydoc);
 
       return ydoc;

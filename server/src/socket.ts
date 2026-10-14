@@ -9,6 +9,7 @@ import { ChatMessage } from "./types/chat.js";
 import { assignRole, isInterviewer } from "./util/role.js";
 import { getInterviewerMode, setInterviewerMode } from "./util/interviewerMode.js";
 import { ensureRoom } from "./services/roomPersistence.js";
+import { flushRoomSnapshot } from "./services/roomAutosave.js";
 
 const MAX_ROOM_ID_LENGTH = 64;
 const MAX_CHAT_LENGTH = 500;
@@ -32,6 +33,16 @@ export function createSocketServer(httpServer: HttpServer) {
 
   ioInstance = io;
 
+  function flushIfRoomEmpty(roomId: string): void {
+    const remainingSockets = io.sockets.adapter.rooms.get(roomId)?.size ?? 0;
+
+    if (remainingSockets === 0) {
+      void flushRoomSnapshot(roomId).catch((error) => {
+        console.error(`Final snapshot save failed for room ${roomId}:`, error);
+      });
+    }
+  }
+
   io.on("connection", (socket) => {
 
     socket.on("join-room", async ({ roomId, user }: { roomId: string; user: { id: string; name: string; color: string } }) => {
@@ -44,6 +55,7 @@ export function createSocketServer(httpServer: HttpServer) {
       if (previousRoom && previousRoom !== roomId) {
         socket.leave(previousRoom);
         removeActiveUser(previousRoom, socket.id);
+        flushIfRoomEmpty(previousRoom);
       }
 
       socket.join(roomId);
@@ -108,6 +120,7 @@ export function createSocketServer(httpServer: HttpServer) {
       removeActiveUser(roomId, socket.id);
       socketRooms.delete(socket.id);
       socketUsers.delete(socket.id);
+      flushIfRoomEmpty(roomId);
     });
 
 
@@ -118,6 +131,7 @@ export function createSocketServer(httpServer: HttpServer) {
       if (roomId) {
         removeActiveUser(roomId, socket.id);
         socketRooms.delete(socket.id);
+        flushIfRoomEmpty(roomId);
       }
 
       socketUsers.delete(socket.id);
