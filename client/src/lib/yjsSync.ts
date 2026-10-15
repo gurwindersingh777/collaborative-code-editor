@@ -13,17 +13,19 @@ export function setupYjsSync(socket: Socket, roomId: string, ydoc: Y.Doc, onInit
     socket.emit("yjs-update", { roomId, update: Array.from(update) });
   }
 
-  function handleRemoteUpdate(data: YjsUpdatePayload,) {
+  function handleRemoteUpdate(data: YjsUpdatePayload) {
     if (data.roomId !== roomId) return;
-    const update = new Uint8Array(data.update);
-    Y.applyUpdate(ydoc, update, "remote");
+    Y.applyUpdate(ydoc, new Uint8Array(data.update), "remote");
   }
 
   function handleInitialSync(data: YjsUpdatePayload) {
     if (data.roomId !== roomId) return;
-    const update = new Uint8Array(data.update);
-    Y.applyUpdate(ydoc, update, "remote");
+    Y.applyUpdate(ydoc, new Uint8Array(data.update), "remote");
     onInitialSync?.();
+
+    const mergedState = Y.encodeStateAsUpdate(ydoc);
+
+    socket.emit("yjs-update", { roomId, update: Array.from(mergedState) });
   }
 
   ydoc.on("update", handleLocalUpdate);
