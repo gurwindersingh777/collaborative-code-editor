@@ -18,12 +18,14 @@ model Room {
 
 model Participant {
   id       String   @id @default(uuid())
+  userId   String
   name     String
   roomId   String
   joinedAt DateTime @default(now())
 
   room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
+  @@unique([roomId, userId])
   @@index([roomId])
 }
 

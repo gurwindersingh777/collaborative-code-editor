@@ -10,6 +10,7 @@ import { assignRole, isInterviewer } from "./util/role.js";
 import { getInterviewerMode, setInterviewerMode } from "./util/interviewerMode.js";
 import { ensureRoom } from "./services/roomPersistence.js";
 import { flushRoomSnapshot } from "./services/roomAutosave.js";
+import prisma from "./lib/prisma.js";
 
 const MAX_ROOM_ID_LENGTH = 64;
 const MAX_CHAT_LENGTH = 500;
@@ -64,6 +65,13 @@ export function createSocketServer(httpServer: HttpServer) {
 
       try {
         await ensureRoom(roomId);
+
+        await prisma.participant.upsert({
+          where: { roomId_userId: { roomId, userId: user.id } },
+          update: { name: user.name },
+          create: { roomId, userId: user.id, name: user.name }
+        })
+        
         const ydoc = await getRoomDocument(roomId);
 
         if (socketRooms.get(socket.id) !== roomId || !socket.rooms.has(roomId)) return;
