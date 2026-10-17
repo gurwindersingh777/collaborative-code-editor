@@ -4,9 +4,9 @@ import * as Y from "yjs";
 import { getRoomDocument } from "../src/yjs/roomDocuments.js";
 import { addActiveUser, getActiveUsers, removeActiveUser } from "./rooms/activeUsers.js";
 import { getTimer, pauseTimer, resetTimer, startTimer } from "./util/timer.js";
-import { getLanguage, setLanguage } from "./util/language.js";
+import { getLanguage, hydrateLanguage, setLanguage } from "./util/language.js";
 import { ChatMessage } from "./types/chat.js";
-import { assignRole, isInterviewer } from "./util/role.js";
+import { registerRole, isInterviewer } from "./util/role.js";
 import { getInterviewerMode, setInterviewerMode } from "./util/interviewerMode.js";
 import { ensureRoom } from "./services/roomPersistence.js";
 import { flushRoomSnapshot } from "./services/roomAutosave.js";
@@ -48,10 +48,10 @@ export function createSocketServer(httpServer: HttpServer) {
 
     socket.on("join-room", async ({ roomId, user }: { roomId: string; user: { id: string; name: string; color: string } }) => {
       // Validate input
-      if (typeof roomId != "string" || !roomId || roomId.length > MAX_ROOM_ID_LENGTH) return;
-      if (!user || typeof user.id != "string" || typeof user.name !== "string" || typeof user.color !== "string") return;
+      if (typeof roomId !== "string" || !roomId || roomId.length > MAX_ROOM_ID_LENGTH) return;
+      if (!user || typeof user.id !== "string" || typeof user.name !== "string" || typeof user.color !== "string") return;
 
-      // One socket = one room, Leave the old one if switching.
+      // One socket = one room. Leave the old one if switching.
       const previousRoom = socketRooms.get(socket.id);
       if (previousRoom && previousRoom !== roomId) {
         socket.leave(previousRoom);
@@ -69,14 +69,29 @@ export function createSocketServer(httpServer: HttpServer) {
         await prisma.participant.upsert({
           where: { roomId_userId: { roomId, userId: user.id } },
           update: { name: user.name },
-          create: { roomId, userId: user.id, name: user.name }
-        })
-        
+          create: { roomId, userId: user.id, name: user.name },
+        });
+
+        await prisma.room.updateMany({
+          where: { id: roomId, hostUserId: null },
+          data: { hostUserId: user.id },
+        });
+
+        const room = await prisma.room.findUniqueOrThrow({
+          where: { id: roomId },
+          select: { hostUserId: true, language: true },
+        });
+
         const ydoc = await getRoomDocument(roomId);
 
         if (socketRooms.get(socket.id) !== roomId || !socket.rooms.has(roomId)) return;
 
-        const role = assignRole(roomId, user.id, socket.id);
+        const role = room.hostUserId === user.id ? "interviewer" : "candidate";
+        registerRole(roomId, user.id, socket.id, role);
+
+        if (SUPPORTED_LANGUAGES.includes(room.language as Language)) {
+          hydrateLanguage(roomId, room.language as Language);
+        }
 
         addActiveUser(roomId, { socketId: socket.id, name: user.name, color: user.color });
 
@@ -85,20 +100,22 @@ export function createSocketServer(httpServer: HttpServer) {
         socket.emit("timer-state", getTimer(roomId));
         socket.emit("interviewer-mode-state", getInterviewerMode(roomId));
 
-        const state = Y.encodeStateAsUpdate(ydoc);
-
-        socket.emit("yjs-sync", { roomId, update: Array.from(state) });
+        socket.emit("yjs-sync", {
+          roomId,
+          update: Array.from(Y.encodeStateAsUpdate(ydoc)),
+          stateVector: Array.from(Y.encodeStateVector(ydoc)),
+        });
 
         socket.to(roomId).emit("awareness-request", { roomId });
       } catch (error) {
         console.error(`Failed to initialize room ${roomId}:`, error);
 
-        // Clean up only if this is still the socket's current room.
         if (socketRooms.get(socket.id) === roomId) {
           socket.leave(roomId);
           socketRooms.delete(socket.id);
           socketUsers.delete(socket.id);
           removeActiveUser(roomId, socket.id);
+          socket.emit("join-error", { roomId });
         }
       }
     });
@@ -186,6 +203,9 @@ export function createSocketServer(httpServer: HttpServer) {
       if (!inRoom(socket, roomId)) return;
       if (!SUPPORTED_LANGUAGES.includes(language)) return;
       io.to(roomId).emit("language-state", setLanguage(roomId, language));
+
+      void prisma.room.update({ where: { id: roomId }, data: { language } })
+        .catch((error) => console.error("Failed to save language:", error));
     });
 
     // Chat
@@ -225,6 +245,10 @@ export function createSocketServer(httpServer: HttpServer) {
       if (!inRoom(socket, roomId)) return;
       socket.emit("interviewer-mode-state", getInterviewerMode(roomId));
     });
+
+    if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+      (window as unknown as { socket: typeof socket }).socket = socket;
+    }
 
   });
 

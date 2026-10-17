@@ -46,6 +46,7 @@ export default function Home() {
   const [role, setRole] = useState<"interviewer" | "candidate" | null>(null);
   const [interviewerMode, setInterviewerMode] = useState(false);
   const [activeTab, setActiveTab] = useState<RightTab>("problem");
+  const [joinError, setJoinError] = useState(false);
 
   // temporary user
   const [user, setUser] = useState<LocalUser | null>(null);
@@ -128,12 +129,12 @@ export default function Home() {
       socket.emit("request-interviewer-mode-state", currentRoomId);
     }
 
-    function handleDisconnect() {
-      setConnected(false);
-    }
+    function handleDisconnect() { setConnected(false); }
+    function handleJoinError() { setJoinError(true); }
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
+    socket.on("join-error", handleJoinError);
     socket.connect();
 
     return () => {
@@ -315,6 +316,11 @@ export default function Home() {
   return (
     <main className="flex h-screen flex-col">
       <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b px-4 py-3">
+        {joinError && (
+          <div className="bg-red-500/10 px-4 py-2 text-sm text-red-500">
+            Couldn't join this room. Refresh to try again.
+          </div>
+        )}
         {/* LEFT: title + room */}
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-semibold whitespace-nowrap">

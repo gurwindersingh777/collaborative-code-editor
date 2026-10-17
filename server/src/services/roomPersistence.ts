@@ -2,6 +2,8 @@
 import * as Y from "yjs";
 import prisma from "../lib/prisma.js";
 
+const SNAPSHOTS_TO_KEEP = 5;
+
 // Find an existing room or create it if it doesn't exist.
 export async function ensureRoom(roomId: string, roomName = `Room ${roomId}`) {
   return prisma.room.upsert({
@@ -16,14 +18,22 @@ export async function ensureRoom(roomId: string, roomName = `Room ${roomId}`) {
 export async function saveSnapshot(roomId: string, ydoc: Y.Doc) {
   await ensureRoom(roomId);
 
-  const state = Y.encodeStateAsUpdate(ydoc);
+  const created = await prisma.snapshot.create({
+    data: { roomId, state: Buffer.from(Y.encodeStateAsUpdate(ydoc)) }
+  })
 
-  return prisma.snapshot.create({
-    data: {
-      roomId,
-      state: Buffer.from(state),
-    },
+  const keep = await prisma.snapshot.findMany({
+    where: { roomId },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: SNAPSHOTS_TO_KEEP,
+    select: { id: true },
+  })
+
+  await prisma.snapshot.deleteMany({
+    where: { roomId, id: { notIn: keep.map((s) => s.id) } },
   });
+
+  return created;
 }
 
 

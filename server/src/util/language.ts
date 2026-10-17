@@ -12,3 +12,7 @@ export function setLanguage(roomId: string, language: Language): Language {
   roomLanguages.set(roomId, language);
   return language;
 }
+
+export function hydrateLanguage(roomId: string, language: Language): void {
+  if (!roomLanguages.has(roomId)) roomLanguages.set(roomId, language);
+}

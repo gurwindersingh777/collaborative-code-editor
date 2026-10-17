@@ -85,3 +85,8 @@ export async function flushRoomSnapshot(roomId: string): Promise<void> {
 
   await saveRoom(roomId);
 }
+
+export async function flushAllRooms(): Promise<void> {
+  if (autosaveInterval) clearInterval(autosaveInterval);
+  await Promise.allSettled([...roomDocuments.keys()].map((id) => flushRoomSnapshot(id)));
+}

@@ -4,7 +4,8 @@ import type { Socket } from "socket.io-client";
 type YjsUpdatePayload = {
   roomId: string;
   update: number[];
-};
+  stateVector?: number[];
+}
 
 export function setupYjsSync(socket: Socket, roomId: string, ydoc: Y.Doc, onInitialSync?: () => void) {
 
@@ -21,10 +22,18 @@ export function setupYjsSync(socket: Socket, roomId: string, ydoc: Y.Doc, onInit
   function handleInitialSync(data: YjsUpdatePayload) {
     if (data.roomId !== roomId) return;
     Y.applyUpdate(ydoc, new Uint8Array(data.update), "remote");
+
+    if (data.stateVector) {
+      const missing = Y.encodeStateAsUpdate(ydoc, new Uint8Array(data.stateVector))
+
+      if (missing.length > 2) {
+        socket.emit("yjs-update", { roomId, update: Array.from(missing) });
+      }
+    }
+
     onInitialSync?.();
 
     const mergedState = Y.encodeStateAsUpdate(ydoc);
-
     socket.emit("yjs-update", { roomId, update: Array.from(mergedState) });
   }
 
