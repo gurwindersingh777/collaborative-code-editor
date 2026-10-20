@@ -1,31 +1,21 @@
-import { CursorPresence, SelectionPresence } from "@/types/presence";
-import { Awareness } from "y-protocols/awareness.js";
+import type { Awareness } from "y-protocols/awareness.js";
+import type { UserPresence } from "@/types/presence";
 
 const USER_COLORS = [
-  "#3B82F6",
-  "#22C55E",
-  "#F97316",
-  "#A855F7",
-  "#EC4899",
-  "#14B8A6",
-  "#EAB308",
-  "#EF4444",
+  "#3B82F6", "#22C55E", "#F97316", "#A855F7",
+  "#EC4899", "#14B8A6", "#EAB308", "#EF4444",
 ];
 
-export interface LocalUser {
-  name: string;
-  color: string;
+export type LocalUser = UserPresence & { id: string };
+
+export function createLocalUser(name = `User-${Math.floor(Math.random() * 1000)}`): LocalUser {
+  return {
+    id: crypto.randomUUID(),
+    name,
+    color: USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)],
+  };
 }
 
-export function generateUserColor(): string {
-  const index = Math.floor(Math.random() * USER_COLORS.length);
-  return USER_COLORS[index];
-}
-
-export function createLocalUser(name: string): LocalUser {
-  return { name: name.trim(), color: generateUserColor() };
-}
-
-export function setupAwareness(awareness: Awareness, user: LocalUser) {
-  awareness.setLocalStateField("user", { name: user.name, color: user.color })
+export function setupAwareness(awareness: Awareness, user: UserPresence) {
+  awareness.setLocalStateField("user", { name: user.name, color: user.color });
 }

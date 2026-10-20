@@ -1,17 +1,19 @@
 import * as Y from "yjs";
 import type { Socket } from "socket.io-client";
 
+type Bytes = ArrayBuffer | Uint8Array;
+
 type YjsUpdatePayload = {
   roomId: string;
-  update: number[];
-  stateVector?: number[];
-}
+  update: Bytes;
+  stateVector?: Bytes;
+};
 
-export function setupYjsSync(socket: Socket, roomId: string, ydoc: Y.Doc, onInitialSync?: () => void) {
+export function setupYjsSync(socket: Socket, roomId: string, ydoc: Y.Doc) {
 
   function handleLocalUpdate(update: Uint8Array, origin: unknown) {
     if (origin === "remote") return;
-    socket.emit("yjs-update", { roomId, update: Array.from(update) });
+    socket.emit("yjs-update", { roomId, update });
   }
 
   function handleRemoteUpdate(data: YjsUpdatePayload) {
@@ -24,17 +26,12 @@ export function setupYjsSync(socket: Socket, roomId: string, ydoc: Y.Doc, onInit
     Y.applyUpdate(ydoc, new Uint8Array(data.update), "remote");
 
     if (data.stateVector) {
-      const missing = Y.encodeStateAsUpdate(ydoc, new Uint8Array(data.stateVector))
+      const missing = Y.encodeStateAsUpdate(ydoc, new Uint8Array(data.stateVector));
 
       if (missing.length > 2) {
-        socket.emit("yjs-update", { roomId, update: Array.from(missing) });
+        socket.emit("yjs-update", { roomId, update: missing });
       }
     }
-
-    onInitialSync?.();
-
-    const mergedState = Y.encodeStateAsUpdate(ydoc);
-    socket.emit("yjs-update", { roomId, update: Array.from(mergedState) });
   }
 
   ydoc.on("update", handleLocalUpdate);

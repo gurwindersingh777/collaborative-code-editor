@@ -42,10 +42,3 @@ export async function getRoomDocument(roomId: string): Promise<Y.Doc> {
 
   return initialization;
 }
-
-export function deleteRoomDocument(roomId: string): void {
-  const ydoc = roomDocuments.get(roomId);
-  if (!ydoc) return;
-  ydoc.destroy();
-  roomDocuments.delete(roomId);
-}

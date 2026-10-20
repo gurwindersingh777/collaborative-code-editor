@@ -12,3 +12,4 @@ services:
       - ./data/piston/packages:/piston/packages
     tmpfs:
       - /tmp:exec
+    mem_limit: 1g  

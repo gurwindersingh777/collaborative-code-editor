@@ -1,99 +1,60 @@
-import { socket } from "@/lib/socket";
 import { useEffect, useState } from "react";
+import { socket } from "@/lib/socket";
+import type { TimerState } from "@/types/room";
 
+type SessionTimerProps = { roomId: string };
 
-type TimerState = {
-  running: boolean;
-  startedAt: number | null;
-  elapsed: number;
-};
-
-type SessionTimerProps = {
-  roomId: string;
-};
-
-function formatTime(seconds: number) {
-  const totalSeconds = Math.floor(seconds);
+function formatTime(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const minutes = Math.floor(totalSeconds / 60);
-  const remainingSeconds = totalSeconds % 60;
-
-  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 export default function SessionTimer({ roomId }: SessionTimerProps) {
-  const [timer, setTimer] = useState<TimerState>({
-    running: false,
-    startedAt: null,
-    elapsed: 0,
-  });
+  const [timer, setTimer] = useState<TimerState>({ running: false, startedAt: null, elapsed: 0 });
+  const [clockOffset, setClockOffset] = useState(0); // server clock minus my clock, in ms
+  const [displayMs, setDisplayMs] = useState(0);
 
-  const [displaySeconds, setDisplaySeconds] = useState(0);
-
+  // The server pushes the timer when we join, so we only listen
   useEffect(() => {
-    function handleTimerState(nextTimer: TimerState) {
-      setTimer(nextTimer);
-    }
-
-    function requestTimerState() {
-      socket.emit("request-timer-state", roomId);
+    function handleTimerState(next: TimerState) {
+      if (typeof next.serverNow === "number") setClockOffset(next.serverNow - Date.now());
+      setTimer(next);
     }
 
     socket.on("timer-state", handleTimerState);
-
-    if (socket.connected) requestTimerState();
-
-    socket.on("connect", requestTimerState);
-
-    return () => {
-      socket.off("timer-state", handleTimerState);
-      socket.off("connect", requestTimerState);
-    };
-  }, [roomId]);
+    return () => { socket.off("timer-state", handleTimerState); };
+  }, []);
 
   useEffect(() => {
     function updateDisplay() {
       if (!timer.running || timer.startedAt === null) {
-        setDisplaySeconds(timer.elapsed);
+        setDisplayMs(timer.elapsed);
         return;
       }
-
-      const runningSeconds = Math.floor((Date.now() - timer.startedAt) / 1000);
-      setDisplaySeconds(timer.elapsed + runningSeconds);
+      const now = Date.now() + clockOffset; // my clock, corrected to the server's
+      setDisplayMs(timer.elapsed + Math.max(0, now - timer.startedAt));
     }
 
     updateDisplay();
-
     if (!timer.running) return;
 
-    const interval = setInterval(updateDisplay, 1000);
-
+    const interval = setInterval(updateDisplay, 250);
     return () => clearInterval(interval);
-  }, [timer]);
-
-  function handleStart() {
-    socket.emit("start-timer", roomId);
-  }
-
-  function handlePause() {
-    socket.emit("pause-timer", roomId);
-  }
-
-  function handleReset() {
-    socket.emit("reset-timer", roomId);
-  }
-
+  }, [timer, clockOffset]);
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="font-mono text-lg font-semibold">{formatTime(displaySeconds)}</span>
+    <div className="flex items-center gap-1">
+      <span className="font-mono tabular-nums">{formatTime(displayMs)}</span>
 
-      {!timer.running ?
-        <button onClick={handleStart} className="rounded border px-3 py-1 text-sm">Start</button>
-        :
-        <button onClick={handlePause} className="rounded border px-3 py-1 text-sm">Pause</button>
-      }
-
-      <button onClick={handleReset} className="rounded border px-3 py-1 text-sm">Reset</button>
+      <button
+        onClick={() => socket.emit(timer.running ? "pause-timer" : "start-timer", roomId)}
+        className="btn"
+      >
+        {timer.running ? "Pause" : "Start"}
+      </button>
+      <button onClick={() => socket.emit("reset-timer", roomId)} className="btn">Reset</button>
     </div>
   );
 }

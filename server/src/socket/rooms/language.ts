@@ -1,8 +1,8 @@
-export type Language = "javascript" | "python";
-
-const roomLanguages = new Map<string, Language>();
+import type { Language } from "../../types/language.js";
 
 const DEFAULT_LANGUAGE: Language = "javascript";
+
+const roomLanguages = new Map<string, Language>();
 
 export function getLanguage(roomId: string): Language {
   return roomLanguages.get(roomId) ?? DEFAULT_LANGUAGE;

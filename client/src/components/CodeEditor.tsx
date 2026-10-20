@@ -1,11 +1,10 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import Editor, { type OnMount } from "@monaco-editor/react";
+import { useEffect, useState } from "react";
+import Editor from "@monaco-editor/react";
 import type * as Y from "yjs";
 import type { MonacoBinding } from "y-monaco";
 import type { Awareness } from "y-protocols/awareness.js";
 import type { editor as MonacoEditor } from "monaco-editor";
+import { useRemoteCursors } from "@/hooks/useRemoteCursors";
 
 type CodeEditorProps = {
   language: string;
@@ -14,162 +13,28 @@ type CodeEditorProps = {
   isReadOnly: boolean;
 };
 
-const SAFE_COLOR = /^#[0-9a-fA-F]{6}$/;
-
 export default function CodeEditor({ language, ytext, awareness, isReadOnly }: CodeEditorProps) {
-  const bindingRef = useRef<MonacoBinding | null>(null);
-  const cursorListenerRef = useRef<{ dispose: () => void } | null>(null);
-  const selectionListenerRef = useRef<{ dispose: () => void } | null>(null);
-  const decorationsRef = useRef<MonacoEditor.IEditorDecorationsCollection | null>(null);
-
-  const handleEditorMount: OnMount = async (editor) => {
-    const model = editor.getModel();
-
-    if (!model) return;
-
-    const editorModel = model;
-
-    const { MonacoBinding } = await import("y-monaco");
-
-    // Connect Monaco to Yjs
-    bindingRef.current = new MonacoBinding(ytext, editorModel, new Set([editor]));
-
-    decorationsRef.current = editor.createDecorationsCollection();
-
-    // Track local cursor
-    cursorListenerRef.current =
-      editor.onDidChangeCursorPosition((event) => {
-        awareness.setLocalStateField("cursor", {
-          lineNumber: event.position.lineNumber,
-          column: event.position.column,
-        });
-      });
-
-    // Track local selection
-    selectionListenerRef.current =
-      editor.onDidChangeCursorSelection((event) => {
-        const selection = event.selection;
-
-        awareness.setLocalStateField("selection", {
-          startLineNumber: selection.startLineNumber,
-          startColumn: selection.startColumn,
-          endLineNumber: selection.endLineNumber,
-          endColumn: selection.endColumn,
-        });
-      });
-
-    function updateRemotePresence() {
-      const decorations: MonacoEditor.IModelDeltaDecoration[] = [];
-
-      awareness.getStates().forEach((state, clientId) => {
-        // Don't render our own cursor
-        if (clientId === awareness.clientID) return;
-
-        const user = state.user;
-        const cursor = state.cursor;
-        const selection = state.selection;
-
-        if (!user || !cursor) return;
-
-        const lineNumber = cursor.lineNumber;
-        const column = cursor.column;
-
-        // Make sure cursor is inside the current model
-        if (lineNumber < 1 || lineNumber > editorModel.getLineCount()) return;
-
-        const maxColumn = editorModel.getLineMaxColumn(lineNumber);
-
-        if (column < 1 || column > maxColumn) return;
-
-        // Remote cursor
-        decorations.push({
-          range: {
-            startLineNumber: lineNumber,
-            startColumn: column,
-            endLineNumber: lineNumber,
-            endColumn: column,
-          },
-          options: {
-            className: `remote-cursor-${clientId}`,
-          },
-        });
-
-        // Remote selection
-        if (selection) {
-          decorations.push({
-            range: {
-              startLineNumber: selection.startLineNumber,
-              startColumn: selection.startColumn,
-              endLineNumber: selection.endLineNumber,
-              endColumn: selection.endColumn,
-            },
-            options: {
-              className: `remote-selection-${clientId}`,
-            },
-          });
-        }
-      });
-
-      decorationsRef.current?.set(decorations);
-    }
-
-    awareness.on("change", updateRemotePresence);
-    updateRemotePresence();
-
-    // Create styles for remote cursors
-    const styleElement = document.createElement("style");
-    styleElement.id = `remote-cursor-styles-${awareness.clientID}`;
-    document.head.appendChild(styleElement,);
-
-    function updateRemoteStyles() {
-      styleElement.textContent = `${Array.from(awareness.getStates().entries())
-        .filter(([clientId, state]) =>
-          clientId !== awareness.clientID &&
-          state.user &&
-          SAFE_COLOR.test(state.user.color))
-        .map(([clientId, state]) => `
-          .remote-cursor-${clientId} {
-            border-left: 2px solid ${state.user.color};
-            margin-left: -1px;
-          }
-
-          .remote-selection-${clientId} {
-            background-color: ${state.user.color};
-            opacity: 0.25;
-          }
-        `,
-        )
-        .join("\n")}
-  `;
-    }
-
-    updateRemoteStyles();
-
-    awareness.on("change", updateRemoteStyles);
-
-    editor.onDidDispose(() => {
-      awareness.off("change", updateRemotePresence);
-      awareness.off("change", updateRemoteStyles);
-      decorationsRef.current?.clear();
-      styleElement.remove();
-    });
-  };
-
+  const [editor, setEditor] = useState<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  
   useEffect(() => {
+    const model = editor?.getModel();
+    if (!editor || !model) return;
+
+    let cancelled = false;
+    let binding: MonacoBinding | undefined;
+
+    import("y-monaco").then(({ MonacoBinding }) => {
+      if (cancelled) return;
+      binding = new MonacoBinding(ytext, model, new Set([editor]));
+    });
+
     return () => {
-      bindingRef.current?.destroy();
-      bindingRef.current = null;
-
-      cursorListenerRef.current?.dispose();
-      cursorListenerRef.current = null;
-
-      selectionListenerRef.current?.dispose();
-      selectionListenerRef.current = null;
-
-      decorationsRef.current?.clear();
-      decorationsRef.current = null;
+      cancelled = true;
+      binding?.destroy();
     };
-  }, [ytext, awareness]);
+  }, [editor, ytext]);
+
+  useRemoteCursors(editor, awareness);
 
   return (
     <Editor
@@ -177,20 +42,16 @@ export default function CodeEditor({ language, ytext, awareness, isReadOnly }: C
       width="100%"
       language={language}
       theme="vs-dark"
-      onMount={handleEditorMount}
+      onMount={(mountedEditor) => setEditor(mountedEditor)}
       options={{
         readOnly: isReadOnly,
         minimap: { enabled: false },
         fontSize: 14,
-        lineHeight: 22,
-        fontFamily: "var(--font-geist-mono), 'Fira Code', Consolas, monospace",
+        lineHeight: 20,
+        fontFamily: "Consolas, 'Cascadia Code', 'Courier New', monospace",
         automaticLayout: true,
-        padding: {
-          top: 16,
-          bottom: 16,
-        },
+        padding: { top: 12, bottom: 12 },
         scrollBeyondLastLine: false,
-        smoothScrolling: true,
         renderWhitespace: "selection",
         tabSize: 2,
         wordWrap: "on",

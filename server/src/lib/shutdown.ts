@@ -1,12 +1,14 @@
-import prisma from "../lib/prisma.js";
+import prisma from "./prisma.js";
 import { flushAllRooms } from "../services/roomAutosave.js";
 
 let shuttingDown = false;
 
 export async function shutdown(signal: string) {
-  if (shuttingDown) return;
+  if (shuttingDown) return; // ignore a second Ctrl+C
   shuttingDown = true;
   console.log(`${signal} received, saving rooms...`);
+
+  setTimeout(() => process.exit(1), 10_000).unref();
 
   try {
     await flushAllRooms();

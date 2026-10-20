@@ -1,33 +1,54 @@
-
 import * as Y from "yjs";
 import prisma from "../lib/prisma.js";
+import type { Language } from "../types/language.js";
 
 const SNAPSHOTS_TO_KEEP = 5;
 
-// Find an existing room or create it if it doesn't exist.
-export async function ensureRoom(roomId: string, roomName = `Room ${roomId}`) {
+export async function ensureRoom(roomId: string) {
   return prisma.room.upsert({
     where: { id: roomId },
     update: {},
-    create: { id: roomId, roomName },
+    create: { id: roomId, roomName: `Room ${roomId}` },
   });
 }
 
+export async function recordJoin(roomId: string, user: { id: string; name: string }) {
+  await ensureRoom(roomId);
 
-// Save the complete Yjs document state as a database snapshot.
+  await prisma.participant.upsert({
+    where: { roomId_userId: { roomId, userId: user.id } },
+    update: { name: user.name },
+    create: { roomId, userId: user.id, name: user.name },
+  });
+
+  await prisma.room.updateMany({
+    where: { id: roomId, hostUserId: null },
+    data: { hostUserId: user.id },
+  });
+
+  return prisma.room.findUniqueOrThrow({
+    where: { id: roomId },
+    select: { hostUserId: true, language: true },
+  });
+}
+
+export async function saveLanguage(roomId: string, language: Language): Promise<void> {
+  await prisma.room.update({ where: { id: roomId }, data: { language } });
+}
+
 export async function saveSnapshot(roomId: string, ydoc: Y.Doc) {
   await ensureRoom(roomId);
 
   const created = await prisma.snapshot.create({
-    data: { roomId, state: Buffer.from(Y.encodeStateAsUpdate(ydoc)) }
-  })
+    data: { roomId, state: Buffer.from(Y.encodeStateAsUpdate(ydoc)) },
+  });
 
   const keep = await prisma.snapshot.findMany({
     where: { roomId },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: SNAPSHOTS_TO_KEEP,
     select: { id: true },
-  })
+  });
 
   await prisma.snapshot.deleteMany({
     where: { roomId, id: { notIn: keep.map((s) => s.id) } },
@@ -36,8 +57,6 @@ export async function saveSnapshot(roomId: string, ydoc: Y.Doc) {
   return created;
 }
 
-
-// Load the most recently saved snapshot for a room.
 export async function loadLatestSnapshot(roomId: string): Promise<Uint8Array | null> {
   const snapshot = await prisma.snapshot.findFirst({
     where: { roomId },
@@ -45,7 +64,5 @@ export async function loadLatestSnapshot(roomId: string): Promise<Uint8Array | n
     select: { state: true },
   });
 
-  if (!snapshot) return null;
-
-  return new Uint8Array(snapshot.state);
+  return snapshot ? new Uint8Array(snapshot.state) : null;
 }

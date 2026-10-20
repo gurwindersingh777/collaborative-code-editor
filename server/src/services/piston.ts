@@ -1,63 +1,69 @@
-type SupportedLanguage = "javascript" | "python";
 
-interface PistonResult {
-  run?: {
-    stdout: string;
-    stderr: string;
-    output?: string;
-    code: number | null;
-    signal: string | null;
-    message?: string | null;
-    status?: string | null;
-    memory?: number;
-    cpu_time?: number;
-    wall_time?: number;
-  };
+import type { Language } from "../types/language.js";
+import type { ExecutionResult } from "../types/execution.js";
+import { config } from "../config/config.js";
 
-  compile?: {
-    stdout: string;
-    stderr: string;
-    output?: string;
-    code: number | null;
-    signal: string | null;
-    message?: string | null;
-    status?: string | null;
-    memory?: number;
-    cpu_time?: number;
-    wall_time?: number;
-  };
+export interface PistonStage {
+  stdout: string;
+  stderr: string;
+  code: number | null;
+  signal: string | null;
+  message?: string | null;
+  status?: string | null;
 }
 
-const PISTON_URL = process.env.PISTON_URL ?? "http://localhost:2000";
+export interface PistonResult {
+  run?: PistonStage;
+}
 
-const RUNTIME_VERSIONS: Record<SupportedLanguage, string> = {
+const RUNTIME_VERSIONS: Record<Language, string> = {
   javascript: "20.11.1",
   python: "3.12.0",
 };
 
-export async function executeCode(language: SupportedLanguage, code: string): Promise<PistonResult> {
-  const response = await fetch(`${PISTON_URL}/api/v2/execute`, {
+const FILE_NAMES: Record<Language, string> = {
+  javascript: "main.js",
+  python: "main.py",
+};
+
+export async function executeCode(language: Language, code: string): Promise<PistonResult> {
+  const response = await fetch(`${config.pistonUrl}/api/v2/execute`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       language,
       version: RUNTIME_VERSIONS[language],
-      files: [
-        {
-          name: language === "javascript" ? "main.js" : "main.py",
-          content: code,
-        },
-      ],
+      files: [{ name: FILE_NAMES[language], content: code }],
     }),
   });
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    console.error("Piston error response:", errorBody);
+    console.error("Piston error response:", await response.text());
     throw new Error(`Piston returned HTTP ${response.status}`);
   }
 
   return response.json() as Promise<PistonResult>;
+}
+
+function getStatusMessage(run: PistonStage): string | undefined {
+  switch (run.status) {
+    case "TO": return run.message ?? "Time limit exceeded.";
+    case "OL": return "Output limit exceeded.";
+    case "EL": return "Error output limit exceeded.";
+    case "SG": return "Program was terminated by the sandbox.";
+    case "XX": return "Piston encountered an internal execution error.";
+    default: return run.message ?? undefined;
+  }
+}
+
+export function toExecutionResult(run: PistonStage): ExecutionResult {
+  return {
+    success: run.code === 0,
+    stdout: run.stdout,
+    stderr: run.stderr,
+    exitCode: run.code,
+    signal: run.signal,
+    message: getStatusMessage(run),
+    status: run.status ?? undefined,
+  };
 }

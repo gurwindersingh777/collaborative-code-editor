@@ -1,30 +1,60 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0b0f14;
-  --foreground: #ffffff;
+@theme static {
+  --color-vs-editor: #1e1e1e;      /* editor background */
+  --color-vs-side: #252526;        /* header and side panel */
+  --color-vs-line: #3c3c3c;        /* borders */
+  --color-vs-hover: #2a2d2e;
+  --color-vs-input: #3c3c3c;
+  --color-vs-fg: #cccccc;          /* normal text */
+  --color-vs-muted: #858585;       /* secondary text */
+  --color-vs-accent: #007acc;
+  --color-vs-accent-hover: #1a8ad4;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  height: 100%;
+html {
+  color-scheme: dark; /* dark scrollbars, dropdowns and form controls */
 }
 
 body {
   margin: 0;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-vs-editor);
+  color: var(--color-vs-fg);
+  font: 13px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-button,
-select {
-  font: inherit;
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #424242 transparent;
 }
 
-button {
-  cursor: pointer;
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 2px;
+    font-size: 12px;
+    color: var(--color-vs-fg);
+    cursor: pointer;
+  }
+  .btn:hover:not(:disabled) { background: var(--color-vs-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-primary { background: var(--color-vs-accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--color-vs-accent-hover); }
+
+  .field {
+    height: 24px;
+    padding: 0 6px;
+    border-radius: 2px;
+    border: 1px solid var(--color-vs-line);
+    background: var(--color-vs-input);
+    color: var(--color-vs-fg);
+    font-size: 12px;
+    outline: none;
+  }
+  .field:focus { border-color: var(--color-vs-accent); }
 }
