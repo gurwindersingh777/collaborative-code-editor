@@ -1,13 +1,16 @@
 import type * as Y from "yjs";
 import Chat from "./Chat";
+import OnlineUsers from "./OnlineUsers";
 import ProblemStatement from "./ProblemStatement";
+import type { PresenceUser } from "@/types/room";
 
-export type SideTab = "problem" | "output" | "chat";
+export type SideTab = "problem" | "output" | "chat" | "people";
 
 const TABS: { id: SideTab; label: string }[] = [
   { id: "problem", label: "Problem" },
   { id: "output", label: "Output" },
   { id: "chat", label: "Chat" },
+  { id: "people", label: "People" },
 ];
 
 type SidePanelProps = {
@@ -15,11 +18,16 @@ type SidePanelProps = {
   problem: Y.Text | null;
   locked: boolean;
   output: string;
+  users: PresenceUser[];
+  selfId: string | null;
+  onRename: (name: string) => void;
   activeTab: SideTab;
   onTabChange: (tab: SideTab) => void;
 };
 
-export default function SidePanel({ roomId, problem, locked, output, activeTab, onTabChange }: SidePanelProps) {
+export default function SidePanel({
+  roomId, problem, locked, output, users, selfId, onRename, activeTab, onTabChange,
+}: SidePanelProps) {
   const panel = (tab: SideTab) => (activeTab === tab ? "h-full" : "hidden");
 
   return (
@@ -59,6 +67,10 @@ export default function SidePanel({ roomId, problem, locked, output, activeTab, 
 
         <div className={panel("chat")}>
           <Chat roomId={roomId} active={activeTab === "chat"} />
+        </div>
+
+        <div className={panel("people")}>
+          <OnlineUsers users={users} selfId={selfId} onRename={onRename} />
         </div>
       </div>
     </aside>

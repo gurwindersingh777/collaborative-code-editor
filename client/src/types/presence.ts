@@ -1,12 +1,6 @@
-export interface UserPresence {
-  name: string;
-  color: string;
-}
+export interface UserPresence { name: string; color: string }
 
-export interface CursorPresence {
-  lineNumber: number;
-  column: number;
-}
+export interface CursorPresence { lineNumber: number; column: number }
 
 export interface SelectionPresence {
   startLineNumber: number;
@@ -16,7 +10,7 @@ export interface SelectionPresence {
 }
 
 export interface AwarenessState {
-  user: UserPresence;
+  user: { color: string };
   cursor?: CursorPresence;
   selection?: SelectionPresence;
 }

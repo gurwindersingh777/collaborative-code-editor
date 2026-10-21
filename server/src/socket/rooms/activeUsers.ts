@@ -27,3 +27,10 @@ export function getActiveUsers(roomId: string): ActiveUser[] {
   if (!roomUsers) return [];
   return Array.from(roomUsers.values());
 }
+
+export function renameActiveUser(roomId: string, socketId: string, name: string): boolean {
+  const user = activeUsers.get(roomId)?.get(socketId);
+  if (!user) return false;
+  user.name = name;
+  return true;
+}

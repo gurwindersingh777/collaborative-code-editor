@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { socket } from "@/lib/socket";
 import type { LocalUser } from "@/lib/presence";
 
@@ -7,13 +7,17 @@ export function useRoomConnection(roomId: string, user: LocalUser) {
   const [joinError, setJoinError] = useState(false);
   const [socketId, setSocketId] = useState<string | null>(null);
 
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+
   useEffect(() => {
     function handleConnect() {
       setConnected(true);
       setJoinError(false);
       setSocketId(socket.id ?? null);
 
-      socket.emit("join-room", { roomId, user: { id: user.id, name: user.name, color: user.color } });
+      const { id, name, color } = userRef.current;
+      socket.emit("join-room", { roomId, user: { id, name, color } });
     }
     function handleDisconnect() { setConnected(false); }
     function handleJoinError() { setJoinError(true); }
@@ -30,7 +34,7 @@ export function useRoomConnection(roomId: string, user: LocalUser) {
       socket.off("join-error", handleJoinError);
       socket.disconnect();
     };
-  }, [roomId, user]);
+  }, [roomId, user.id]);
 
   return { connected, joinError, socketId };
 }

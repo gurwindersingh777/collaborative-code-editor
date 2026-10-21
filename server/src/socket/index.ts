@@ -13,11 +13,11 @@ let ioInstance: Server | null = null;
 
 export function createSocketServer(httpServer: HttpServer) {
   const io = new Server(httpServer, {
-    cors: { origin: config.clientUrl },
-    transports: ["websocket"],   
-    maxHttpBufferSize: 5e6,      
+    cors: { origin: config.clientOrigins },
+    transports: ["websocket"],
+    maxHttpBufferSize: 5e6,
     pingInterval: 25_000,
-    pingTimeout: 60_000,        
+    pingTimeout: 60_000,
   });
 
   ioInstance = io;

@@ -1,7 +1,5 @@
 import type { Socket } from "socket.io";
 import * as Y from "yjs";
-
-
 import type { AwarenessUpdatePayload, YjsUpdatePayload } from "../../types/socket.js";
 import { awarenessClients, socketRooms, socketUsers } from "../state.js";
 import { inRoom, onSafe, toBytes } from "../helpers.js";

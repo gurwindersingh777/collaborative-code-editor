@@ -1,19 +1,24 @@
 import { useState } from "react";
 import CodeEditor from "./CodeEditor";
-
+import RoomHeader from "./RoomHeader";
+import SidePanel, { type SideTab } from "./SidePanel";
 import { useCodeExecution } from "@/hooks/useCodeExecution";
 import { useRoomConnection } from "@/hooks/useRoomConnection";
 import { useRoomState } from "@/hooks/useRoomState";
 import { useYjsRoom } from "@/hooks/useYjsRoom";
+import { socket } from "@/lib/socket";
 import type { LocalUser } from "@/lib/presence";
-import RoomHeader from "./RoomHeader";
-import SidePanel, { SideTab } from "./SidePanel";
 
-type RoomViewProps = { roomId: string; user: LocalUser };
+type RoomViewProps = {
+  roomId: string;
+  user: LocalUser;
+  onRename: (name: string) => void;
+};
 
-export default function RoomView({ roomId, user }: RoomViewProps) {
+export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
   const [activeTab, setActiveTab] = useState<SideTab>("problem");
-  const yjsRoom = useYjsRoom(roomId, user);
+
+  const yjsRoom = useYjsRoom(roomId, user.color);
   const room = useRoomState(roomId);
   const execution = useCodeExecution(roomId, room.language, yjsRoom?.ytext ?? null);
   const connection = useRoomConnection(roomId, user);
@@ -23,6 +28,11 @@ export default function RoomView({ roomId, user }: RoomViewProps) {
     void execution.run();
   }
 
+  function handleRename(name: string) {
+    onRename(name);                                 
+    socket.emit("rename-user", { roomId, name });   
+  }
+
   return (
     <main className="flex h-screen flex-col">
       <RoomHeader
@@ -30,8 +40,9 @@ export default function RoomView({ roomId, user }: RoomViewProps) {
         role={room.role}
         interviewerMode={room.interviewerMode}
         onInterviewerModeChange={room.changeInterviewerMode}
-        onlineUsers={room.onlineUsers}
-        selfId={connection.socketId}
+        locked={room.isLocked}
+        users={room.onlineUsers}          
+        selfId={connection.socketId}      
         connected={connection.connected}
         language={room.language}
         onLanguageChange={room.changeLanguage}
@@ -62,6 +73,9 @@ export default function RoomView({ roomId, user }: RoomViewProps) {
           problem={yjsRoom?.problem ?? null}
           locked={room.isLocked}
           output={execution.output}
+          users={room.onlineUsers}
+          selfId={connection.socketId}
+          onRename={handleRename}
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />

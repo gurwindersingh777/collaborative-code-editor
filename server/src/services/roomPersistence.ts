@@ -66,3 +66,7 @@ export async function loadLatestSnapshot(roomId: string): Promise<Uint8Array | n
 
   return snapshot ? new Uint8Array(snapshot.state) : null;
 }
+
+export async function saveParticipantName(roomId: string, userId: string, name: string): Promise<void> {
+  await prisma.participant.updateMany({ where: { roomId, userId }, data: { name } });
+}

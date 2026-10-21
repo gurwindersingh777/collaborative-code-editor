@@ -5,11 +5,11 @@ import { socket } from "@/lib/socket";
 import { createYjsDocument } from "@/lib/yjs";
 import { setupYjsSync } from "@/lib/yjsSync";
 import { setupAwarenessSync } from "@/lib/yjsAwareness";
-import { setupAwareness, type LocalUser } from "@/lib/presence";
+import { setupAwareness } from "@/lib/presence";
 
 export type YjsRoom = { ytext: Y.Text; problem: Y.Text; awareness: Awareness };
 
-export function useYjsRoom(roomId: string, user: LocalUser): YjsRoom | null {
+export function useYjsRoom(roomId: string, color: string): YjsRoom | null {
   const [yjsRoom, setYjsRoom] = useState<YjsRoom | null>(null);
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export function useYjsRoom(roomId: string, user: LocalUser): YjsRoom | null {
 
     const stopSync = setupYjsSync(socket, roomId, ydoc);
     const stopAwareness = setupAwarenessSync(socket, roomId, awareness);
-    setupAwareness(awareness, user);
+    setupAwareness(awareness, color);
 
     return () => {
       stopSync();
@@ -27,7 +27,7 @@ export function useYjsRoom(roomId: string, user: LocalUser): YjsRoom | null {
       ydoc.destroy();
       setYjsRoom(null);
     };
-  }, [roomId, user]);
+  }, [roomId, color]);
 
   return yjsRoom;
 }

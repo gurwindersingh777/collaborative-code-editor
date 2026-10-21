@@ -22,3 +22,11 @@ export function onSafe(socket: Socket, event: string, handler: (...args: any[]) 
     }
   });
 }
+
+export const MAX_NAME_LENGTH = 30;
+
+export function cleanName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const name = value.replace(/\s+/g, " ").trim().slice(0, MAX_NAME_LENGTH);
+  return name || null;
+}

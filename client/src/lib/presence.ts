@@ -6,6 +6,8 @@ const USER_COLORS = [
   "#EC4899", "#14B8A6", "#EAB308", "#EF4444",
 ];
 
+export const MAX_NAME_LENGTH = 30; 
+
 export type LocalUser = UserPresence & { id: string };
 
 export function createLocalUser(name = `User-${Math.floor(Math.random() * 1000)}`): LocalUser {
@@ -16,6 +18,10 @@ export function createLocalUser(name = `User-${Math.floor(Math.random() * 1000)}
   };
 }
 
-export function setupAwareness(awareness: Awareness, user: UserPresence) {
-  awareness.setLocalStateField("user", { name: user.name, color: user.color });
+export function cleanName(value: string): string | null {
+  return value.replace(/\s+/g, " ").trim().slice(0, MAX_NAME_LENGTH) || null;
+}
+
+export function setupAwareness(awareness: Awareness, color: string) {
+  awareness.setLocalStateField("user", { color });
 }

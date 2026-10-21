@@ -8,7 +8,7 @@ import { generateRoomId } from "@/lib/room";
 
 export default function Home() {
   const [roomId, setRoomId] = useState<string | null | undefined>(undefined);
-  const user = useLocalUser();
+  const { user, rename } = useLocalUser();
 
   useEffect(() => {
     setRoomId(new URLSearchParams(window.location.search).get("room"));
@@ -20,7 +20,7 @@ export default function Home() {
     setRoomId(newRoomId);
   }
 
-  if (roomId === undefined) return null; 
+  if (roomId === undefined) return null;
   if (!roomId) return <LandingScreen onCreateRoom={handleCreateRoom} />;
 
   if (!user) {
@@ -31,5 +31,5 @@ export default function Home() {
     );
   }
 
-  return <RoomView roomId={roomId} user={user} />;
+  return <RoomView roomId={roomId} user={user} onRename={rename} />;
 }

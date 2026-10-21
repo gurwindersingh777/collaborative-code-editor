@@ -1,20 +1,21 @@
 import type { Server, Socket } from "socket.io";
 import * as Y from "yjs";
 import { getRoomDocument } from "../../yjs/roomDocuments.js";
-import { recordJoin } from "../../services/roomPersistence.js";
+import { recordJoin, saveParticipantName } from "../../services/roomPersistence.js";
 import { flushRoomSnapshot } from "../../services/roomAutosave.js";
 
 import { isLanguage } from "../../types/language.js";
-import type { JoinRoomPayload, RoomUser } from "../../types/socket.js";
+import type { JoinRoomPayload, RenameUserPayload, RoomUser } from "../../types/socket.js";
 import { forgetSocket, socketRooms, socketUsers } from "../state.js";
-import { inRoom, onSafe } from "../helpers.js";
-import { addActiveUser, getActiveUsers, removeActiveUser } from "../rooms/activeUsers.js";
+import { cleanName, inRoom, onSafe } from "../helpers.js";
+import { addActiveUser, getActiveUsers, removeActiveUser, renameActiveUser } from "../rooms/activeUsers.js";
 import { InterviewRole, registerRole } from "../rooms/role.js";
 import { getLanguage, hydrateLanguage } from "../rooms/language.js";
 import { getTimerPayload } from "../rooms/timer.js";
 import { getInterviewerMode } from "../rooms/interviewerMode.js";
 
 const MAX_ROOM_ID_LENGTH = 64;
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 function isValidRoomId(roomId: unknown): roomId is string {
   return typeof roomId === "string" && roomId.length > 0 && roomId.length <= MAX_ROOM_ID_LENGTH;
@@ -23,7 +24,11 @@ function isValidRoomId(roomId: unknown): roomId is string {
 function isValidUser(user: unknown): user is RoomUser {
   if (!user || typeof user !== "object") return false;
   const { id, name, color } = user as Record<string, unknown>;
-  return typeof id === "string" && typeof name === "string" && typeof color === "string";
+  return (
+    typeof id === "string" && id.length > 0 && id.length <= 64 &&
+    typeof name === "string" &&
+    typeof color === "string" && HEX_COLOR.test(color)
+  );
 }
 
 function broadcastPresence(io: Server, roomId: string): void {
@@ -50,6 +55,8 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
   onSafe(socket, "join-room", async ({ roomId, user }: JoinRoomPayload) => {
     if (!isValidRoomId(roomId) || !isValidUser(user)) return;
+    const name = cleanName(user.name);
+    if (!name) return;
 
     const previousRoom = socketRooms.get(socket.id);
     if (previousRoom && previousRoom !== roomId) {
@@ -111,5 +118,20 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     forgetSocket(socket.id);
 
     if (roomId) removeFromRoom(io, socket, roomId);
+  });
+
+  onSafe(socket, "rename-user", ({ roomId, name }: RenameUserPayload) => {
+    if (!inRoom(socket, roomId)) return;
+
+    const userId = socketUsers.get(socket.id);
+    const cleaned = cleanName(name);
+    if (!userId || !cleaned) return;
+
+    if (!renameActiveUser(roomId, socket.id, cleaned)) return;
+    broadcastPresence(io, roomId);
+
+    void saveParticipantName(roomId, userId, cleaned).catch((error) =>
+      console.error("Failed to save name:", error)
+    );
   });
 }

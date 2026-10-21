@@ -1,25 +1,27 @@
 import { useState } from "react";
-import OnlineUsers from "./OnlineUsers";
 import SessionTimer from "./SessionTimer";
 import { LANGUAGES, type Language } from "@/lib/languages";
 import type { InterviewRole, PresenceUser } from "@/types/room";
+import OnlineDots from "./OnlineDots";
 
 type RoomHeaderProps = {
   roomId: string;
   role: InterviewRole | null;
   interviewerMode: boolean;
   onInterviewerModeChange: (enabled: boolean) => void;
-  onlineUsers: PresenceUser[];
-  selfId: string | null;
+  locked: boolean;
   connected: boolean;
   language: Language;
   onLanguageChange: (language: Language) => void;
   isRunning: boolean;
   onRun: () => void;
+  users: PresenceUser[];
+  selfId: string | null;
 };
 
 export default function RoomHeader({
-  roomId, role, interviewerMode, onInterviewerModeChange, onlineUsers, selfId,
+  roomId, role, interviewerMode, onInterviewerModeChange, locked,
+  users, selfId,
   connected, language, onLanguageChange, isRunning, onRun,
 }: RoomHeaderProps) {
   const [copied, setCopied] = useState(false);
@@ -41,31 +43,35 @@ export default function RoomHeader({
       </div>
 
       <div className="flex items-center gap-3">
-        {role && (
-          <span className="text-vs-muted">{role === "interviewer" ? "Interviewer" : "Candidate"}</span>
-        )}
-
         {role === "interviewer" && (
-          <label className="flex cursor-pointer items-center gap-1.5">
+          <label
+            className="flex cursor-pointer items-center gap-1.5"
+            title="Others can still read, chat and run code, but cannot edit"
+          >
             <input
               type="checkbox"
               checked={interviewerMode}
               onChange={(event) => onInterviewerModeChange(event.target.checked)}
               className="accent-vs-accent"
             />
-            Interviewer mode
+            Lock editing
           </label>
         )}
+
+        {locked && <span className="text-amber-400">Editing locked by host</span>}
 
         <SessionTimer roomId={roomId} />
       </div>
 
       <div className="flex items-center gap-3">
-        <OnlineUsers users={onlineUsers} selfId={selfId} />
+        <OnlineDots users={users} selfId={selfId} />
 
         <span className="flex items-center gap-1.5 text-vs-muted">
-          <span className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-red-500"}`} />
-          {connected ? "Connected" : "Disconnected"}
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "animate-pulse bg-amber-400"
+              }`}
+          />
+          {connected ? "Connected" : "Connecting..."}
         </span>
 
         <select

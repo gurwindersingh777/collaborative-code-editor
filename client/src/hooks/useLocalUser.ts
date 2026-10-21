@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createLocalUser, type LocalUser } from "@/lib/presence";
 
 const STORAGE_KEY = "editor-user";
@@ -9,7 +9,7 @@ function isLocalUser(value: unknown): value is LocalUser {
   return typeof id === "string" && typeof name === "string" && typeof color === "string";
 }
 
-export function useLocalUser(): LocalUser | null {
+export function useLocalUser() {
   const [user, setUser] = useState<LocalUser | null>(null);
 
   useEffect(() => {
@@ -28,5 +28,12 @@ export function useLocalUser(): LocalUser | null {
     setUser(created);
   }, []);
 
-  return user;
+  const rename = useCallback((name: string) => {
+    if (!user) return;
+    const next = { ...user, name };
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setUser(next);
+  }, [user]);
+
+  return { user, rename };
 }
