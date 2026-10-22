@@ -7,6 +7,7 @@ function parseOrigins(value: string | undefined): string[] {
 
 export const config = {
   port: Number(process.env.PORT) || 4000,
-  clientOrigins: parseOrigins(process.env.CLIENT_URL), 
+  clientOrigins: parseOrigins(process.env.CLIENT_URL),
   pistonUrl: process.env.PISTON_URL ?? "http://localhost:2000",
+  pistonToken: process.env.PISTON_TOKEN,
 } as const;

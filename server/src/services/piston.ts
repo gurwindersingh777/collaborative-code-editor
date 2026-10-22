@@ -18,7 +18,7 @@ export interface PistonResult {
 
 const RUNTIME_VERSIONS: Record<Language, string> = {
   javascript: "20.11.1",
-  python: "3.12.0",
+  python: "3.10.0",
 };
 
 const FILE_NAMES: Record<Language, string> = {
@@ -29,7 +29,10 @@ const FILE_NAMES: Record<Language, string> = {
 export async function executeCode(language: Language, code: string): Promise<PistonResult> {
   const response = await fetch(`${config.pistonUrl}/api/v2/execute`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(config.pistonToken ? { Authorization: `Bearer ${config.pistonToken}` } : {}),
+    },
     body: JSON.stringify({
       language,
       version: RUNTIME_VERSIONS[language],
