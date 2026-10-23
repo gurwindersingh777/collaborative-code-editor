@@ -1,0 +1,12 @@
+{$PISTON_HOST} {
+	@allowed {
+		path /api/v2/execute
+		header X-Piston-Key {$PISTON_KEY}
+	}
+	handle @allowed {
+		reverse_proxy api:2000
+	}
+	handle {
+		respond "Unauthorized" 401
+	}
+}

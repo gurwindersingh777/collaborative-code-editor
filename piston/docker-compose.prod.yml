@@ -1,0 +1,33 @@
+services:
+  api:
+    image: ghcr.io/engineer-man/piston:latest
+    restart: unless-stopped
+    privileged: true
+    mem_limit: 1g
+    environment:
+      PISTON_OUTPUT_MAX_SIZE: "1048576"
+    ports:
+      - "127.0.0.1:2000:2000"
+    volumes:
+      - ./data/piston/packages:/piston/packages
+    tmpfs:
+      - /tmp:exec
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PISTON_HOST: ${PISTON_HOST:?set PISTON_HOST in .env}
+      PISTON_KEY: ${PISTON_KEY:?set PISTON_KEY in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [api]
+
+volumes:
+  caddy-data:
+  caddy-config:
