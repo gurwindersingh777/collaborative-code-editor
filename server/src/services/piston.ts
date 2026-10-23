@@ -31,7 +31,7 @@ export async function executeCode(language: Language, code: string): Promise<Pis
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(config.pistonToken ? { Authorization: `Bearer ${config.pistonToken}` } : {}),
+      ...(config.pistonKey ? { "X-Piston-Key": config.pistonKey } : {}),
     },
     body: JSON.stringify({
       language,
