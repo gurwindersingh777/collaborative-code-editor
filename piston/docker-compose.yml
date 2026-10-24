@@ -8,6 +8,8 @@ services:
       - "2000:2000"
     environment:
       PISTON_OUTPUT_MAX_SIZE: "1048576"
+      PISTON_RUN_MEMORY_LIMIT: "268435456"       
+      PISTON_COMPILE_MEMORY_LIMIT: "805306368" 
     volumes:
       - ./data/piston/packages:/piston/packages
     tmpfs:
