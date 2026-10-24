@@ -1,55 +1,53 @@
 import { useCallback, useEffect, useState } from "react";
-import type * as Y from "yjs";
 import { socket } from "@/lib/socket";
-import { API_URL } from "@/lib/config";
 import { formatExecutionResult } from "@/lib/execution";
-import type { Language } from "@/lib/languages";
 import type { ExecutionResult } from "@/types/room";
 
-export function useCodeExecution(roomId: string, language: Language, ytext: Y.Text | null) {
+type RunAck = { ok: boolean; error?: string };
+
+export function useCodeExecution(roomId: string) {
   const [output, setOutput] = useState("");
   const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
+    function handleStarted(data: { roomId: string }) {
+      if (data.roomId !== roomId) return;
+      setIsRunning(true);
+      setOutput("Running...");
+    }
     function handleResult(result: ExecutionResult) {
       setIsRunning(false);
       setOutput(formatExecutionResult(result));
     }
+    function handleDisconnect() {
+      setIsRunning(false);
+    }
 
+    socket.on("execution-started", handleStarted);
     socket.on("execution-result", handleResult);
-    return () => { socket.off("execution-result", handleResult); };
-  }, []);
+    socket.on("disconnect", handleDisconnect);
 
-  const run = useCallback(async () => {
-    if (!ytext) {
-      setOutput("Editor is not ready.");
-      return;
-    }
+    return () => {
+      socket.off("execution-started", handleStarted);
+      socket.off("execution-result", handleResult);
+      socket.off("disconnect", handleDisconnect);
+    };
+  }, [roomId]);
 
-    const code = ytext.toString();
-    if (!code.trim()) {
-      setOutput("Nothing to execute.");
-      return;
-    }
-
-    setOutput("Running...");
+  const run = useCallback(() => {
     setIsRunning(true);
+    setOutput("Running...");
 
-    try {
-      const response = await fetch(`${API_URL}/api/execute`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, language, code }),
-      });
-      const result = await response.json();
-
-      setIsRunning(false);
-      setOutput(response.ok ? formatExecutionResult(result) : result.error || "Execution request failed.");
-    } catch {
-      setIsRunning(false);
-      setOutput("Unable to connect to execution service.");
-    }
-  }, [roomId, language, ytext]);
+    socket.timeout(10_000).emit("run-code", { roomId }, (error: Error | null, response?: RunAck) => {
+      if (error) {
+        setIsRunning(false);
+        setOutput("The server did not respond. Check your connection.");
+      } else if (response && !response.ok) {
+        setIsRunning(false);
+        setOutput(response.error ?? "Could not run the code.");
+      }
+    });
+  }, [roomId]);
 
   return { output, isRunning, run };
 }

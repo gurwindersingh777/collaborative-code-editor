@@ -5,3 +5,4 @@ export type AwarenessUpdatePayload = { roomId: string; clientId: number; update:
 export type SendChatPayload = { roomId: string; message: string };
 export type InterviewerModePayload = { roomId: string; enabled: boolean };
 export type RenameUserPayload = { roomId: string; name: unknown };
+export type RunCodePayload = { roomId: string };

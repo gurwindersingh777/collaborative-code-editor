@@ -20,17 +20,17 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
 
   const yjsRoom = useYjsRoom(roomId, user.color);
   const room = useRoomState(roomId);
-  const execution = useCodeExecution(roomId, room.language, yjsRoom?.ytext ?? null);
+  const execution = useCodeExecution(roomId);
   const connection = useRoomConnection(roomId, user);
 
   function handleRun() {
     setActiveTab("output");
-    void execution.run();
+    execution.run();
   }
 
   function handleRename(name: string) {
-    onRename(name);                                 
-    socket.emit("rename-user", { roomId, name });   
+    onRename(name);
+    socket.emit("rename-user", { roomId, name });
   }
 
   return (
@@ -41,8 +41,8 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
         interviewerMode={room.interviewerMode}
         onInterviewerModeChange={room.changeInterviewerMode}
         locked={room.isLocked}
-        users={room.onlineUsers}          
-        selfId={connection.socketId}      
+        users={room.onlineUsers}
+        selfId={connection.socketId}
         connected={connection.connected}
         language={room.language}
         onLanguageChange={room.changeLanguage}

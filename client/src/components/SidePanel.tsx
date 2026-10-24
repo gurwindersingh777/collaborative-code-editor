@@ -69,7 +69,7 @@ export default function SidePanel({
 
         <div className={panel("output")}>
           <pre
-            className={`h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-sm leading-6 ${output
+            className={`h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-[13px] leading-6 ${output
               ? /error|exception|traceback|failed/i.test(output)
                 ? "text-red-300"
                 : "text-vs-fg"

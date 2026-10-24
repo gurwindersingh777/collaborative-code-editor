@@ -13,6 +13,7 @@ import { InterviewRole, registerRole } from "../rooms/role.js";
 import { getLanguage, hydrateLanguage } from "../rooms/language.js";
 import { getTimerPayload } from "../rooms/timer.js";
 import { getInterviewerMode } from "../rooms/interviewerMode.js";
+import { forgetRunHistory } from "../../services/runLimiter.js";
 
 const MAX_ROOM_ID_LENGTH = 64;
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -114,6 +115,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   });
 
   onSafe(socket, "disconnect", () => {
+    forgetRunHistory(socket.id)
     const roomId = socketRooms.get(socket.id);
     forgetSocket(socket.id);
 

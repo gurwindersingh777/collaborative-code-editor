@@ -8,8 +8,7 @@ import { registerLanguageHandlers } from "./handlers/language.js";
 import { registerChatHandlers } from "./handlers/chat.js";
 import { registerInterviewerModeHandlers } from "./handlers/interviewerMode.js";
 import { config } from "../config/config.js";
-
-let ioInstance: Server | null = null;
+import { registerRunHandlers } from "./handlers/run.js";
 
 export function createSocketServer(httpServer: HttpServer) {
   const io = new Server(httpServer, {
@@ -20,8 +19,6 @@ export function createSocketServer(httpServer: HttpServer) {
     pingTimeout: 60_000,
   });
 
-  ioInstance = io;
-
   io.on("connection", (socket) => {
     registerRoomHandlers(io, socket);
     registerSyncHandlers(socket);
@@ -29,14 +26,8 @@ export function createSocketServer(httpServer: HttpServer) {
     registerLanguageHandlers(io, socket);
     registerChatHandlers(io, socket);
     registerInterviewerModeHandlers(io, socket);
+    registerRunHandlers(io, socket)
   });
 
   return io;
-}
-
-export function getSocketServer() {
-  if (!ioInstance) {
-    throw new Error("Socket.IO server has not been initialized");
-  }
-  return ioInstance;
 }
