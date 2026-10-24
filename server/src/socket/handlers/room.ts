@@ -22,6 +22,10 @@ function isValidRoomId(roomId: unknown): roomId is string {
   return typeof roomId === "string" && roomId.length > 0 && roomId.length <= MAX_ROOM_ID_LENGTH;
 }
 
+function cleanHostToken(value: unknown): string | null {
+  return typeof value === "string" && value.length >= 32 && value.length <= 128 ? value : null;
+}
+
 function isValidUser(user: unknown): user is RoomUser {
   if (!user || typeof user !== "object") return false;
   const { id, name, color } = user as Record<string, unknown>;
@@ -54,7 +58,7 @@ function removeFromRoom(io: Server, socket: Socket, roomId: string): void {
 
 export function registerRoomHandlers(io: Server, socket: Socket) {
 
-  onSafe(socket, "join-room", async ({ roomId, user }: JoinRoomPayload) => {
+  onSafe(socket, "join-room", async ({ roomId, user, hostToken }: JoinRoomPayload) => {
     if (!isValidRoomId(roomId) || !isValidUser(user)) return;
     const name = cleanName(user.name);
     if (!name) return;
@@ -69,12 +73,12 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     socketUsers.set(socket.id, user.id);
 
     try {
-      const room = await recordJoin(roomId, user);
+      const room = await recordJoin(roomId, { id: user.id, name }, cleanHostToken(hostToken));
       const ydoc = await getRoomDocument(roomId);
 
       if (socketRooms.get(socket.id) !== roomId || !socket.rooms.has(roomId)) return;
 
-      const role: InterviewRole = room.hostUserId === user.id ? "interviewer" : "candidate";
+      const role: InterviewRole = room.isHost ? "interviewer" : "candidate";
       registerRole(roomId, user.id, role);
 
       if (isLanguage(room.language)) hydrateLanguage(roomId, room.language);

@@ -5,6 +5,8 @@ import LandingScreen from "@/components/LandingScreen";
 import RoomView from "@/components/RoomView";
 import { useLocalUser } from "@/hooks/useLocalUser";
 import { generateRoomId } from "@/lib/room";
+import { createHostToken } from "@/lib/hostToken";
+
 
 export default function Home() {
   const [roomId, setRoomId] = useState<string | null | undefined>(undefined);
@@ -16,6 +18,7 @@ export default function Home() {
 
   function handleCreateRoom() {
     const newRoomId = generateRoomId();
+    createHostToken(newRoomId);
     window.history.pushState({}, "", `/?room=${newRoomId}`);
     setRoomId(newRoomId);
   }

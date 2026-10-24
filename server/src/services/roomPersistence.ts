@@ -1,6 +1,7 @@
 import * as Y from "yjs";
 import prisma from "../lib/prisma.js";
 import type { Language } from "../types/language.js";
+import { createHash } from "node:crypto";
 
 const SNAPSHOTS_TO_KEEP = 5;
 
@@ -12,7 +13,11 @@ export async function ensureRoom(roomId: string) {
   });
 }
 
-export async function recordJoin(roomId: string, user: { id: string; name: string }) {
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function recordJoin(roomId: string, user: { id: string; name: string }, hostToken: string | null) {
   await ensureRoom(roomId);
 
   await prisma.participant.upsert({
@@ -21,15 +26,24 @@ export async function recordJoin(roomId: string, user: { id: string; name: strin
     create: { roomId, userId: user.id, name: user.name },
   });
 
-  await prisma.room.updateMany({
-    where: { id: roomId, hostUserId: null },
-    data: { hostUserId: user.id },
+  const tokenHash = hostToken ? hashToken(hostToken) : null;
+  
+  if (tokenHash) {
+    await prisma.room.updateMany({
+      where: { id: roomId, hostTokenHash: null },
+      data: { hostTokenHash: tokenHash },
+    });
+  }
+
+  const room = await prisma.room.findUniqueOrThrow({
+    where: { id: roomId },
+    select: { hostTokenHash: true, language: true },
   });
 
-  return prisma.room.findUniqueOrThrow({
-    where: { id: roomId },
-    select: { hostUserId: true, language: true },
-  });
+  return {
+    isHost: tokenHash !== null && room.hostTokenHash === tokenHash,
+    language: room.language,
+  };
 }
 
 export async function saveLanguage(roomId: string, language: Language): Promise<void> {

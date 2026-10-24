@@ -8,11 +8,12 @@ datasource db {
 }
 
 model Room {
-  id         String   @id @default(uuid())
-  roomName   String
-  hostUserId String?
-  language   String   @default("javascript")
-  createdAt  DateTime @default(now())
+  id            String   @id @default(uuid())
+  roomName      String
+  hostUserId    String?
+  hostTokenHash String?
+  language      String   @default("javascript")
+  createdAt     DateTime @default(now())
 
   participants Participant[]
   snapshots    Snapshot[]

@@ -1,3 +1,3 @@
 export function generateRoomId(): string {
-  return crypto.randomUUID().slice(0, 8);
+  return crypto.randomUUID().replaceAll("-", "").slice(0, 16);
 }

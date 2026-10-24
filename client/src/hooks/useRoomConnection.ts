@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "@/lib/socket";
 import type { LocalUser } from "@/lib/presence";
+import { getHostToken } from "@/lib/hostToken";
 
 export function useRoomConnection(roomId: string, user: LocalUser) {
   const [connected, setConnected] = useState(false);
@@ -17,7 +18,7 @@ export function useRoomConnection(roomId: string, user: LocalUser) {
       setSocketId(socket.id ?? null);
 
       const { id, name, color } = userRef.current;
-      socket.emit("join-room", { roomId, user: { id, name, color } });
+      socket.emit("join-room", { roomId, user: { id, name, color }, hostToken: getHostToken(roomId) });
     }
     function handleDisconnect() { setConnected(false); }
     function handleJoinError() { setJoinError(true); }
