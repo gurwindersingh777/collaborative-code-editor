@@ -3,6 +3,7 @@ import SessionTimer from "./SessionTimer";
 import { LANGUAGES, type Language } from "@/lib/languages";
 import type { InterviewRole, PresenceUser } from "@/types/room";
 import OnlineDots from "./OnlineDots";
+import { Check, Clipboard, LockKeyhole, Play, Wifi } from "lucide-react";
 
 type RoomHeaderProps = {
   roomId: string;
@@ -41,7 +42,10 @@ export default function RoomHeader({
         <span className="h-4 w-px bg-vs-line" aria-hidden="true" />
         <span className="text-vs-muted">Room</span>
         <span className="font-mono text-vs-fg">{roomId}</span>
-        <button onClick={handleCopyLink} className="btn">{copied ? "Copied" : "Copy link"}</button>
+        <button onClick={handleCopyLink} className="btn gap-1.5" aria-label={copied ? "Link copied" : "Copy room link"}>
+          {copied ? <Check data-icon="inline-start" /> : <Clipboard data-icon="inline-start" />}
+          {copied ? "Copied" : "Copy link"}
+        </button>
       </div>
 
       <div className="flex items-center gap-3">
@@ -56,6 +60,7 @@ export default function RoomHeader({
               onChange={(event) => onInterviewerModeChange(event.target.checked)}
               className="accent-vs-accent"
             />
+            <LockKeyhole data-icon="inline-start" />
             Lock editing
           </label>
         )}
@@ -69,6 +74,7 @@ export default function RoomHeader({
         <OnlineDots users={users} selfId={selfId} />
 
         <span className="flex items-center gap-1.5 text-vs-muted">
+          <Wifi data-icon="inline-start" />
           <span
             className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "animate-pulse bg-amber-400"
               }`}
@@ -86,7 +92,8 @@ export default function RoomHeader({
           ))}
         </select>
 
-        <button onClick={onRun} disabled={isRunning} className="btn btn-primary">
+        <button onClick={onRun} disabled={isRunning} className="btn btn-primary gap-1.5">
+          <Play data-icon="inline-start" />
           {isRunning ? "Running..." : "Run"}
         </button>
       </div>

@@ -46,8 +46,8 @@ export default function CodeEditor({ language, ytext, awareness, isReadOnly }: C
       options={{
         readOnly: isReadOnly,
         minimap: { enabled: false },
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 15,
+        lineHeight: 22,
         fontFamily: "Consolas, 'Cascadia Code', 'Courier New', monospace",
         automaticLayout: true,
         padding: { top: 16, bottom: 16 },

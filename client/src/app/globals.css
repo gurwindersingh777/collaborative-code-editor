@@ -21,8 +21,13 @@ body {
   margin: 0;
   background: var(--color-vs-editor);
   color: var(--color-vs-fg);
-  font: 13px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif;
+  font: 14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 640px) {
+  .btn { min-height: 30px; }
+  .field { height: 30px; }
 }
 
 * {

@@ -3,14 +3,15 @@ import Chat from "./Chat";
 import OnlineUsers from "./OnlineUsers";
 import ProblemStatement from "./ProblemStatement";
 import type { PresenceUser } from "@/types/room";
+import { FileText, MessageSquare, Terminal, Users } from "lucide-react";
 
 export type SideTab = "problem" | "output" | "chat" | "people";
 
-const TABS: { id: SideTab; label: string }[] = [
-  { id: "problem", label: "Problem" },
-  { id: "output", label: "Output" },
-  { id: "chat", label: "Chat" },
-  { id: "people", label: "People" },
+const TABS: { id: SideTab; label: string; icon: typeof FileText }[] = [
+  { id: "problem", label: "Problem", icon: FileText },
+  { id: "output", label: "Output", icon: Terminal },
+  { id: "chat", label: "Chat", icon: MessageSquare },
+  { id: "people", label: "People", icon: Users },
 ];
 
 type SidePanelProps = {
@@ -48,7 +49,8 @@ export default function SidePanel({
                 : "border-transparent text-vs-muted hover:text-vs-fg"
             }`}
           >
-            {tab.label}
+            <tab.icon data-icon="inline-start" />
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
         ))}
       </div>
@@ -60,8 +62,12 @@ export default function SidePanel({
 
         <div className={panel("output")}>
           <pre
-            className={`h-full overflow-auto whitespace-pre-wrap p-3 font-mono text-xs leading-5 ${
-              output ? "" : "text-vs-muted"
+            className={`h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-sm leading-6 ${
+              output
+                ? /error|exception|traceback|failed/i.test(output)
+                  ? "text-red-300"
+                  : "text-vs-fg"
+                : "text-vs-muted"
             }`}
           >
             {output || "Run the code to see its output here."}
