@@ -29,6 +29,7 @@ type SidePanelProps = {
 export default function SidePanel({
   roomId, problem, locked, output, users, selfId, onRename, activeTab, onTabChange,
 }: SidePanelProps) {
+
   const panel = (tab: SideTab) => (activeTab === tab ? "h-full" : "hidden");
 
   return (
@@ -51,8 +52,8 @@ export default function SidePanel({
               title={tab.label}
               onClick={() => onTabChange(tab.id)}
               className={`-mb-px flex min-w-0 flex-1 items-center justify-center gap-1.5 border-b-2 px-2 text-[11px] font-medium uppercase tracking-wide transition-colors ${active
-                  ? "border-vs-accent text-white"
-                  : "border-transparent text-vs-muted hover:bg-white/5 hover:text-vs-fg"
+                ? "border-vs-accent text-white"
+                : "border-transparent text-vs-muted hover:bg-white/5 hover:text-vs-fg"
                 }`}
             >
               <tab.icon size={14} className="shrink-0" aria-hidden="true" />

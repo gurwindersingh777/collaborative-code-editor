@@ -2,11 +2,21 @@ import { useEffect, useState } from "react";
 import type * as Y from "yjs";
 import { applyTextDiff } from "@/lib/yjsText";
 
+const SAMPLE = `Paste or type the problem here.
+
+Example:
+
+Two Sum (Easy)
+Given an array of integers nums and an integer target, return the indices of the two numbers that add up to target. Each input has exactly one solution, and you may not use the same element twice.
+
+nums = [2, 7, 11, 15], target = 9
+output: [0, 1]`;
+
 type ProblemStatementProps = { problem: Y.Text; isReadOnly: boolean };
 
 export default function ProblemStatement({ problem, isReadOnly }: ProblemStatementProps) {
   const [value, setValue] = useState(() => problem.toString());
-
+  
   useEffect(() => {
     const sync = () => setValue(problem.toString());
     problem.observe(sync);
@@ -19,9 +29,9 @@ export default function ProblemStatement({ problem, isReadOnly }: ProblemStateme
       value={value}
       readOnly={isReadOnly}
       onChange={(event) => applyTextDiff(problem, event.target.value)}
-      placeholder="Paste or type the problem here..."
+      placeholder={isReadOnly ? "The host hasn't added a problem yet." : SAMPLE}
       spellCheck={false}
-      className="h-full min-h-0 w-full resize-none overflow-auto bg-transparent p-4 text-[13px] leading-6 outline-none placeholder:text-vs-muted read-only:cursor-default"
+      className="h-full w-full resize-none bg-transparent p-3 text-[13px] leading-5 outline-none placeholder:text-vs-muted read-only:cursor-default"
     />
   );
 }

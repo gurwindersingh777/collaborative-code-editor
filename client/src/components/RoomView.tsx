@@ -8,6 +8,9 @@ import { useRoomState } from "@/hooks/useRoomState";
 import { useYjsRoom } from "@/hooks/useYjsRoom";
 import { socket } from "@/lib/socket";
 import type { LocalUser } from "@/lib/presence";
+import { applyTextDiff } from "@/lib/yjsText";
+import { Language } from "@/lib/languages";
+import { STARTERS, isUntouchedStarter } from "@/lib/starters";
 
 type RoomViewProps = {
   roomId: string;
@@ -33,6 +36,19 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
     socket.emit("rename-user", { roomId, name });
   }
 
+  function handleLanguageChange(next: Language) {
+    const code = yjsRoom?.ytext;
+
+    if (code && room.role === "interviewer" && !room.isLocked) {
+      const current = code.toString();
+      if (current.trim() === "" || isUntouchedStarter(current)) {
+        applyTextDiff(code, STARTERS[next]);
+      }
+    }
+
+    room.changeLanguage(next);
+  }
+
   return (
     <main className="flex min-h-screen flex-col overflow-hidden">
       <RoomHeader
@@ -45,7 +61,7 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
         selfId={connection.socketId}
         connected={connection.connected}
         language={room.language}
-        onLanguageChange={room.changeLanguage}
+        onLanguageChange={handleLanguageChange}
         isRunning={execution.isRunning}
         onRun={handleRun}
       />
