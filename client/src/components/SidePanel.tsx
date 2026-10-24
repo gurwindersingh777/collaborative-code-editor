@@ -32,6 +32,9 @@ export default function SidePanel({
 
   return (
     <aside className="flex min-h-0 flex-col border-l border-vs-line bg-vs-side">
+      <div className="flex h-8 shrink-0 items-center border-b border-vs-line px-3">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-vs-muted">Workspace</span>
+      </div>
       <div role="tablist" className="flex h-9 shrink-0 border-b border-vs-line">
         {TABS.map((tab) => (
           <button

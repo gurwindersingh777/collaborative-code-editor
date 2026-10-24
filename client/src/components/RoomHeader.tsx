@@ -35,10 +35,12 @@ export default function RoomHeader({
   }
 
   return (
-    <header className="flex min-h-9 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-vs-line bg-vs-side px-3 py-1 text-xs">
-      <div className="flex items-center gap-2">
+    <header className="flex min-h-10 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-vs-line bg-vs-side px-3 text-xs">
+      <div className="flex items-center gap-3">
+        <span className="font-semibold tracking-tight text-white">Code Room</span>
+        <span className="h-4 w-px bg-vs-line" aria-hidden="true" />
         <span className="text-vs-muted">Room</span>
-        <span className="font-mono">{roomId}</span>
+        <span className="font-mono text-vs-fg">{roomId}</span>
         <button onClick={handleCopyLink} className="btn">{copied ? "Copied" : "Copy link"}</button>
       </div>
 

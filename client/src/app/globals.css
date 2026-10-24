@@ -10,6 +10,7 @@
   --color-vs-muted: #858585;       /* secondary text */
   --color-vs-accent: #007acc;
   --color-vs-accent-hover: #1a8ad4;
+  --color-vs-focus: #3794ff;
 }
 
 html {
