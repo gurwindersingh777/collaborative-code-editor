@@ -13,6 +13,8 @@ export default function Home() {
   const { user, rename } = useLocalUser();
 
   useEffect(() => {
+    // Reading the URL needs the browser, so it happens after the first render
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRoomId(new URLSearchParams(window.location.search).get("room"));
   }, []);
 

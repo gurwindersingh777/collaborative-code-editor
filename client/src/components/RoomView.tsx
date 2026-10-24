@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CodeEditor from "./CodeEditor";
 import RoomHeader from "./RoomHeader";
 import SidePanel, { type SideTab } from "./SidePanel";
@@ -25,6 +25,13 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
   const room = useRoomState(roomId);
   const execution = useCodeExecution(roomId);
   const connection = useRoomConnection(roomId, user);
+  const starterAdded = useRef(false);
+  
+  useEffect(() => {
+    if (starterAdded.current || !yjsRoom?.synced || room.role !== "interviewer") return;
+    starterAdded.current = true;
+    if (yjsRoom.ytext.length === 0) applyTextDiff(yjsRoom.ytext, STARTERS[room.language]);
+  }, [yjsRoom, room.role, room.language]);
 
   function handleRun() {
     setActiveTab("output");

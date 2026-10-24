@@ -9,7 +9,7 @@ type YjsUpdatePayload = {
   stateVector?: Bytes;
 };
 
-export function setupYjsSync(socket: Socket, roomId: string, ydoc: Y.Doc) {
+export function setupYjsSync(socket: Socket, roomId: string, ydoc: Y.Doc, onInitialSync?: () => void) {
 
   function handleLocalUpdate(update: Uint8Array, origin: unknown) {
     if (origin === "remote") return;
@@ -32,6 +32,8 @@ export function setupYjsSync(socket: Socket, roomId: string, ydoc: Y.Doc) {
         socket.emit("yjs-update", { roomId, update: missing });
       }
     }
+
+    onInitialSync?.();
   }
 
   ydoc.on("update", handleLocalUpdate);

@@ -12,6 +12,8 @@ function isLocalUser(value: unknown): value is LocalUser {
 export function useLocalUser() {
   const [user, setUser] = useState<LocalUser | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect --
+   sessionStorage only exists in the browser, so the identity is read after the first render */
   useEffect(() => {
     try {
       const stored: unknown = JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? "null");
@@ -27,6 +29,7 @@ export function useLocalUser() {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(created));
     setUser(created);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const rename = useCallback((name: string) => {
     if (!user) return;
