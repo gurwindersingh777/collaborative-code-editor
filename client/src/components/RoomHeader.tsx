@@ -3,6 +3,7 @@ import SessionTimer from "./SessionTimer";
 import { LANGUAGES, type Language } from "@/lib/languages";
 import type { InterviewRole, PresenceUser } from "@/types/room";
 import OnlineDots from "./OnlineDots";
+import { Check, Clipboard, LockKeyhole, Play } from "lucide-react";
 
 type RoomHeaderProps = {
   roomId: string;
@@ -35,11 +36,16 @@ export default function RoomHeader({
   }
 
   return (
-    <header className="flex min-h-9 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-vs-line bg-vs-side px-3 py-1 text-xs">
-      <div className="flex items-center gap-2">
+    <header className="flex min-h-10 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-vs-line bg-vs-side px-3 text-xs">
+      <div className="flex items-center gap-3">
+        <span className="font-semibold tracking-tight text-white">Code Room</span>
+        <span className="h-4 w-px bg-vs-line" aria-hidden="true" />
         <span className="text-vs-muted">Room</span>
-        <span className="font-mono">{roomId}</span>
-        <button onClick={handleCopyLink} className="btn">{copied ? "Copied" : "Copy link"}</button>
+        <span className="font-mono text-vs-fg">{roomId}</span>
+        <button onClick={handleCopyLink} className="btn gap-1.5" aria-label={copied ? "Link copied" : "Copy room link"}>
+          {copied ? <Check data-icon="inline-start" /> : <Clipboard data-icon="inline-start" />}
+          {copied ? "Copied" : "Copy link"}
+        </button>
       </div>
 
       <div className="flex items-center gap-3">
@@ -54,6 +60,7 @@ export default function RoomHeader({
               onChange={(event) => onInterviewerModeChange(event.target.checked)}
               className="accent-vs-accent"
             />
+            <LockKeyhole data-icon="inline-start" />
             Lock editing
           </label>
         )}
@@ -68,6 +75,7 @@ export default function RoomHeader({
 
         <span className="flex items-center gap-1.5 text-vs-muted">
           <span
+            aria-hidden="true"
             className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "animate-pulse bg-amber-400"
               }`}
           />
@@ -84,7 +92,8 @@ export default function RoomHeader({
           ))}
         </select>
 
-        <button onClick={onRun} disabled={isRunning} className="btn btn-primary">
+        <button onClick={onRun} disabled={isRunning} className="btn btn-primary gap-1.5">
+          <Play data-icon="inline-start" />
           {isRunning ? "Running..." : "Run"}
         </button>
       </div>

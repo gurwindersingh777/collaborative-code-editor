@@ -46,13 +46,15 @@ export default function CodeEditor({ language, ytext, awareness, isReadOnly }: C
       options={{
         readOnly: isReadOnly,
         minimap: { enabled: false },
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 15,
+        lineHeight: 22,
         fontFamily: "Consolas, 'Cascadia Code', 'Courier New', monospace",
         automaticLayout: true,
-        padding: { top: 12, bottom: 12 },
+        padding: { top: 16, bottom: 16 },
         scrollBeyondLastLine: false,
         renderWhitespace: "selection",
+        renderLineHighlight: "line",
+        lineNumbersMinChars: 3,
         tabSize: 2,
         wordWrap: "on",
       }}

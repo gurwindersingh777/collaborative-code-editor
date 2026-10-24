@@ -21,7 +21,7 @@ export default function ProblemStatement({ problem, isReadOnly }: ProblemStateme
       onChange={(event) => applyTextDiff(problem, event.target.value)}
       placeholder="Paste or type the problem here..."
       spellCheck={false}
-      className="h-full w-full resize-none bg-transparent p-3 text-[13px] leading-5 outline-none placeholder:text-vs-muted read-only:cursor-default"
+      className="h-full min-h-0 w-full resize-none overflow-auto bg-transparent p-4 text-[14px] leading-6 outline-none placeholder:text-vs-muted read-only:cursor-default"
     />
   );
 }
