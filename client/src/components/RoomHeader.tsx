@@ -3,7 +3,7 @@ import SessionTimer from "./SessionTimer";
 import { LANGUAGES, type Language } from "@/lib/languages";
 import type { InterviewRole, PresenceUser } from "@/types/room";
 import OnlineDots from "./OnlineDots";
-import { Check, Clipboard, LockKeyhole, Play, Wifi } from "lucide-react";
+import { Check, Clipboard, LockKeyhole, Play } from "lucide-react";
 
 type RoomHeaderProps = {
   roomId: string;
@@ -74,8 +74,8 @@ export default function RoomHeader({
         <OnlineDots users={users} selfId={selfId} />
 
         <span className="flex items-center gap-1.5 text-vs-muted">
-          <Wifi data-icon="inline-start" />
           <span
+            aria-hidden="true"
             className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "animate-pulse bg-amber-400"
               }`}
           />

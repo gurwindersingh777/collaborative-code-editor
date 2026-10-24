@@ -21,7 +21,7 @@ body {
   margin: 0;
   background: var(--color-vs-editor);
   color: var(--color-vs-fg);
-  font: 14px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+  font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -36,6 +36,12 @@ body {
 }
 
 @layer components {
+  [data-icon] {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+  }
+
   .btn {
     display: inline-flex;
     align-items: center;
