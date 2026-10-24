@@ -3,6 +3,8 @@ import SessionTimer from "./SessionTimer";
 import { LANGUAGES, type Language } from "@/lib/languages";
 import type { InterviewRole, PresenceUser } from "@/types/room";
 import OnlineDots from "./OnlineDots";
+import { Check, Clipboard, LockKeyhole, Play } from "lucide-react";
+import { APP_NAME } from "@/lib/config";
 
 type RoomHeaderProps = {
   roomId: string;
@@ -35,30 +37,36 @@ export default function RoomHeader({
   }
 
   return (
-    <header className="flex min-h-9 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-vs-line bg-vs-side px-3 py-1 text-xs">
-      <div className="flex items-center gap-2">
-        <span className="text-vs-muted">Room</span>
-        <span className="font-mono">{roomId}</span>
-        <button onClick={handleCopyLink} className="btn">{copied ? "Copied" : "Copy link"}</button>
+    <header className="flex min-h-10 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-vs-line bg-vs-side px-3 text-xs">
+      <div className="flex items-center gap-1">
+        <span className="font-semibold text-white">{APP_NAME}</span>
+        <span className="h-4 w-px bg-vs-line ml-2.5" aria-hidden="true" />
+        <button onClick={handleCopyLink} className="btn gap-1.5" aria-label={copied ? "Link copied" : "Copy room link"}>
+          {copied ? <Check data-icon="inline-start" /> : <Clipboard data-icon="inline-start" />}
+          {copied ? "Copied" : "Copy link"}
+        </button>
       </div>
 
       <div className="flex items-center gap-3">
         {role === "interviewer" && (
-          <label
-            className="flex cursor-pointer items-center gap-1.5"
-            title="Others can still read, chat and run code, but cannot edit"
+          <button
+            type="button"
+            onClick={() => onInterviewerModeChange(!interviewerMode)}
+            aria-pressed={interviewerMode}
+            aria-label="Lock editing"
+            title="Lock editing: others can still read, chat and run code, but cannot edit"
+            className={`btn ${interviewerMode
+                ? "bg-amber-400/15 text-amber-400"
+                : "text-vs-muted hover:text-white"
+              }`}
           >
-            <input
-              type="checkbox"
-              checked={interviewerMode}
-              onChange={(event) => onInterviewerModeChange(event.target.checked)}
-              className="accent-vs-accent"
-            />
-            Lock editing
-          </label>
+            <LockKeyhole data-icon="inline-start" />
+          </button>
         )}
 
-        {locked && <span className="text-amber-400">Editing locked by host</span>}
+        {locked && role !== "interviewer" && (
+          <span className="text-amber-400">Editing locked by host</span>
+        )}
 
         <SessionTimer roomId={roomId} />
       </div>
@@ -68,6 +76,7 @@ export default function RoomHeader({
 
         <span className="flex items-center gap-1.5 text-vs-muted">
           <span
+            aria-hidden="true"
             className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "animate-pulse bg-amber-400"
               }`}
           />
@@ -84,7 +93,8 @@ export default function RoomHeader({
           ))}
         </select>
 
-        <button onClick={onRun} disabled={isRunning} className="btn btn-primary">
+        <button onClick={onRun} disabled={isRunning} className="btn btn-primary gap-1.5">
+          <Play data-icon="inline-start" />
           {isRunning ? "Running..." : "Run"}
         </button>
       </div>

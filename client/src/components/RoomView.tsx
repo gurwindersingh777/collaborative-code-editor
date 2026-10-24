@@ -34,7 +34,7 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
   }
 
   return (
-    <main className="flex h-screen flex-col">
+    <main className="flex min-h-screen flex-col overflow-hidden">
       <RoomHeader
         roomId={roomId}
         role={room.role}
@@ -56,7 +56,7 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_24rem]">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_22rem] max-md:grid-rows-[minmax(0,1fr)_minmax(15rem,42vh)] max-md:grid-cols-1">
         <div className="h-full min-h-0 min-w-0">
           {yjsRoom && (
             <CodeEditor

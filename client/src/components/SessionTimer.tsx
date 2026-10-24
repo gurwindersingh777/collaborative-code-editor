@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { socket } from "@/lib/socket";
 import type { TimerState } from "@/types/room";
+import { Pause, Play, RotateCcw } from "lucide-react";
 
 type SessionTimerProps = { roomId: string };
 
@@ -44,17 +45,31 @@ export default function SessionTimer({ roomId }: SessionTimerProps) {
     return () => clearInterval(interval);
   }, [timer, clockOffset]);
 
+  const ICON_SIZE = 14;
+
   return (
-    <div className="flex items-center gap-1">
-      <span className="font-mono tabular-nums">{formatTime(displayMs)}</span>
+    <div className="flex items-center  text-sm border border-vs-line bg-vs-side pl-2 py-0.5 rounded-sm">
+      <span className="font-mono tabular-nums text-sm min-w-14">
+        {formatTime(displayMs)}
+      </span>
 
       <button
         onClick={() => socket.emit(timer.running ? "pause-timer" : "start-timer", roomId)}
-        className="btn"
+        className="btn inline-flex items-center gap-1.5"
       >
-        {timer.running ? "Pause" : "Start"}
+        {timer.running ? (
+          <><Pause size={ICON_SIZE} />Pause</>
+        ) : (
+          <><Play size={ICON_SIZE} /> Start</>
+        )}
       </button>
-      <button onClick={() => socket.emit("reset-timer", roomId)} className="btn">Reset</button>
+
+      <button
+        onClick={() => socket.emit("reset-timer", roomId)}
+        className="btn inline-flex items-center gap-1.5"
+      >
+        <RotateCcw size={ICON_SIZE} />
+      </button>
     </div>
   );
 }

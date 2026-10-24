@@ -3,14 +3,15 @@ import Chat from "./Chat";
 import OnlineUsers from "./OnlineUsers";
 import ProblemStatement from "./ProblemStatement";
 import type { PresenceUser } from "@/types/room";
+import { FileText, MessageSquare, Terminal, Users } from "lucide-react";
 
 export type SideTab = "problem" | "output" | "chat" | "people";
 
-const TABS: { id: SideTab; label: string }[] = [
-  { id: "problem", label: "Problem" },
-  { id: "output", label: "Output" },
-  { id: "chat", label: "Chat" },
-  { id: "people", label: "People" },
+const TABS: { id: SideTab; label: string; icon: typeof FileText }[] = [
+  { id: "problem", label: "Problem", icon: FileText },
+  { id: "output", label: "Output", icon: Terminal },
+  { id: "chat", label: "Chat", icon: MessageSquare },
+  { id: "people", label: "People", icon: Users },
 ];
 
 type SidePanelProps = {
@@ -32,22 +33,33 @@ export default function SidePanel({
 
   return (
     <aside className="flex min-h-0 flex-col border-l border-vs-line bg-vs-side">
+      <div className="flex h-9 shrink-0 items-center border-b border-vs-line px-3">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-vs-muted">
+          Workspace
+        </span>
+      </div>
+
       <div role="tablist" className="flex h-9 shrink-0 border-b border-vs-line">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`-mb-px border-b px-3 text-[11px] uppercase tracking-wide ${
-              activeTab === tab.id
-                ? "border-vs-accent text-white"
-                : "border-transparent text-vs-muted hover:text-vs-fg"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={active}
+              aria-label={tab.label}
+              title={tab.label}
+              onClick={() => onTabChange(tab.id)}
+              className={`-mb-px flex min-w-0 flex-1 items-center justify-center gap-1.5 border-b-2 px-2 text-[11px] font-medium uppercase tracking-wide transition-colors ${active
+                  ? "border-vs-accent text-white"
+                  : "border-transparent text-vs-muted hover:bg-white/5 hover:text-vs-fg"
+                }`}
+            >
+              <tab.icon size={14} className="shrink-0" aria-hidden="true" />
+              <span className="hidden truncate sm:inline">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="min-h-0 flex-1">
@@ -57,11 +69,14 @@ export default function SidePanel({
 
         <div className={panel("output")}>
           <pre
-            className={`h-full overflow-auto whitespace-pre-wrap p-3 font-mono text-xs leading-5 ${
-              output ? "" : "text-vs-muted"
-            }`}
+            className={`h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-sm leading-6 ${output
+              ? /error|exception|traceback|failed/i.test(output)
+                ? "text-red-300"
+                : "text-vs-fg"
+              : "text-vs-muted"
+              }`}
           >
-            {output || "Run the code to see its output here."}
+            {output || <span className="text-vs-muted text-[13px]">Run the code to see its output here.</span>}
           </pre>
         </div>
 

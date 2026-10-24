@@ -10,6 +10,7 @@
   --color-vs-muted: #858585;       /* secondary text */
   --color-vs-accent: #007acc;
   --color-vs-accent-hover: #1a8ad4;
+  --color-vs-focus: #3794ff;
 }
 
 html {
@@ -20,8 +21,13 @@ body {
   margin: 0;
   background: var(--color-vs-editor);
   color: var(--color-vs-fg);
-  font: 13px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif;
+  font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 640px) {
+  .btn { min-height: 30px; }
+  .field { height: 30px; }
 }
 
 * {
@@ -30,6 +36,12 @@ body {
 }
 
 @layer components {
+  [data-icon] {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+  }
+
   .btn {
     display: inline-flex;
     align-items: center;

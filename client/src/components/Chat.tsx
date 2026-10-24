@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Send } from "lucide-react";
 import { socket } from "@/lib/socket";
 import type { ChatMessage } from "@/types/room";
 
@@ -54,14 +55,26 @@ export default function Chat({ roomId, active }: ChatProps) {
         )}
       </div>
 
-      <div className="border-t border-vs-line p-2">
+      <div className="flex gap-2 border-t border-vs-line p-2 ">
         <input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => { if (event.key === "Enter") send(); }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.nativeEvent.isComposing && event.keyCode !== 229) send();
+          }}
           placeholder="Message (Enter to send)"
-          className="field w-full"
+          className="field min-w-0 flex-1"
         />
+        <button
+          type="button"
+          onClick={send}
+          disabled={!draft.trim()}
+          className="btn btn-primary shrink-0 gap-1.5"
+          aria-label="Send message"
+        >
+          <Send data-icon="inline-start" />
+          <span className="hidden sm:inline">Send</span>
+        </button>
       </div>
     </div>
   );
