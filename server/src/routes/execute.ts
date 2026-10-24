@@ -22,13 +22,12 @@ executeRouter.post("/execute", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Code must be a string" });
     }
 
-    const { run } = await executeCode(language, code);
+    const executionResult = toExecutionResult(await executeCode(language, code));
 
-    if (!run) {
+    if (!executionResult) {
       return res.status(500).json({ error: "Piston did not return an execution result" });
     }
-
-    const executionResult = toExecutionResult(run);
+    
     getSocketServer().to(roomId).emit("execution-result", executionResult);
     return res.status(200).json(executionResult);
 
