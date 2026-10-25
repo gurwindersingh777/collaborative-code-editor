@@ -7,12 +7,10 @@ import { setLanguage } from "../rooms/language.js";
 
 export function registerLanguageHandlers(io: Server, socket: Socket) {
   onSafe(socket, "set-language", (roomId: string, language: unknown) => {
-    if (!inRoom(socket, roomId)) return;
-    if (!isLanguage(language)) return;
+    if (!inRoom(socket, roomId) || !isLanguage(language)) return;
 
     io.to(roomId).emit("language-state", setLanguage(roomId, language));
 
-    // Save it so the choice survives a server restart
     void saveLanguage(roomId, language).catch((error) =>
       console.error("Failed to save language:", error)
     );

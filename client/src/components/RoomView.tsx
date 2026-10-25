@@ -8,9 +8,6 @@ import { useRoomState } from "@/hooks/useRoomState";
 import { useYjsRoom } from "@/hooks/useYjsRoom";
 import { socket } from "@/lib/socket";
 import type { LocalUser } from "@/lib/presence";
-import { applyTextDiff } from "@/lib/yjsText";
-import { Language } from "@/lib/languages";
-import { STARTERS, isUntouchedStarter } from "@/lib/starters";
 
 type RoomViewProps = {
   roomId: string;
@@ -25,13 +22,6 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
   const room = useRoomState(roomId);
   const execution = useCodeExecution(roomId);
   const connection = useRoomConnection(roomId, user);
-  const starterAdded = useRef(false);
-  
-  useEffect(() => {
-    if (starterAdded.current || !yjsRoom?.synced || room.role !== "interviewer") return;
-    starterAdded.current = true;
-    if (yjsRoom.ytext.length === 0) applyTextDiff(yjsRoom.ytext, STARTERS[room.language]);
-  }, [yjsRoom, room.role, room.language]);
 
   function handleRun() {
     setActiveTab("output");
@@ -41,19 +31,6 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
   function handleRename(name: string) {
     onRename(name);
     socket.emit("rename-user", { roomId, name });
-  }
-
-  function handleLanguageChange(next: Language) {
-    const code = yjsRoom?.ytext;
-
-    if (code && room.role === "interviewer" && !room.isLocked) {
-      const current = code.toString();
-      if (current.trim() === "" || isUntouchedStarter(current)) {
-        applyTextDiff(code, STARTERS[next]);
-      }
-    }
-
-    room.changeLanguage(next);
   }
 
   return (
@@ -68,7 +45,7 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
         selfId={connection.socketId}
         connected={connection.connected}
         language={room.language}
-        onLanguageChange={handleLanguageChange}
+        onLanguageChange={room.changeLanguage}
         isRunning={execution.isRunning}
         onRun={handleRun}
       />

@@ -14,3 +14,7 @@ export function registerRole(roomId: string, userId: string, role: InterviewRole
 export function isInterviewer(roomId: string, userId: string): boolean {
   return roomRoles.get(roomId)?.get(userId) === "interviewer";
 }
+
+export function clearRoles(roomId: string): void { 
+  roomRoles.delete(roomId); 
+}

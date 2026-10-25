@@ -16,3 +16,7 @@ export function setLanguage(roomId: string, language: Language): Language {
 export function hydrateLanguage(roomId: string, language: Language): void {
   if (!roomLanguages.has(roomId)) roomLanguages.set(roomId, language);
 }
+
+export function clearLanguage(roomId: string): void {
+  roomLanguages.delete(roomId);
+}

@@ -3,9 +3,9 @@ import { saveSnapshot } from "./roomPersistence.js";
 
 const AUTOSAVE_INTERVAL_MS = 10_000;
 
-const liveDocuments = new Map<string, Y.Doc>();         
-const dirtyRooms = new Set<string>();                   
-const pendingSaves = new Map<string, Promise<void>>();  
+const liveDocuments = new Map<string, Y.Doc>();
+const dirtyRooms = new Set<string>();
+const pendingSaves = new Map<string, Promise<void>>();
 
 let autosaveInterval: ReturnType<typeof setInterval> | undefined;
 
@@ -73,4 +73,8 @@ export async function flushRoomSnapshot(roomId: string): Promise<void> {
 export async function flushAllRooms(): Promise<void> {
   if (autosaveInterval) clearInterval(autosaveInterval);
   await Promise.allSettled([...liveDocuments.keys()].map((id) => flushRoomSnapshot(id)));
+}
+
+export function unregisterRoomDocument(roomId: string): void {
+  liveDocuments.delete(roomId); dirtyRooms.delete(roomId);
 }

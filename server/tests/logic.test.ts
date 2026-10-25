@@ -3,6 +3,7 @@ import { cleanName, toBytes } from "../src/socket/helpers.js";
 import { isLanguage } from "../src/types/language.js";
 import { toExecutionResult } from "../src/services/piston.js";
 import { getTimerPayload, pauseTimer, resetTimer, startTimer } from "../src/socket/rooms/timer.js";
+import { addChatMessage, getChatHistory } from "../src/socket/rooms/chat.js";
 
 describe("cleanName", () => {
   it("trims and collapses spaces", () => {
@@ -107,5 +108,16 @@ describe("session timer", () => {
     const payload = getTimerPayload("room-c");
     expect(payload).toMatchObject({ running: false, elapsed: 0, startedAt: null });
     expect(payload.serverNow).toBe(Date.now());
+  });
+});
+
+describe("chat history", () => {
+  it("keeps only the newest 50 messages", () => {
+    for (let i = 0; i < 55; i++) {
+      addChatMessage("chat-r", { id: String(i), roomId: "chat-r", user: { name: "a", color: "#3B82F6" }, message: `m${i}`, timestamp: i });
+    }
+    const history = getChatHistory("chat-r");
+    expect(history).toHaveLength(50);
+    expect(history[0].message).toBe("m5");
   });
 });

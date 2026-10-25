@@ -19,9 +19,16 @@ export default function Chat({ roomId, active }: ChatProps) {
       if (chatMessage.roomId !== roomId) return;
       setMessages((current) => [...current, chatMessage]);
     }
+    function handleHistory(data: { roomId: string; messages: ChatMessage[] }) {
+      if (data.roomId === roomId) setMessages(data.messages);
+    }
 
     socket.on("chat-message", handleMessage);
-    return () => { socket.off("chat-message", handleMessage); };
+    socket.on("chat-history", handleHistory);
+    return () => {
+      socket.off("chat-message", handleMessage);
+      socket.off("chat-history", handleHistory);
+    };
   }, [roomId]);
 
   useEffect(() => {

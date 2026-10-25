@@ -43,3 +43,7 @@ export function resetTimer(roomId: string): void {
 export function getTimerPayload(roomId: string) {
   return { ...getTimer(roomId), serverNow: Date.now() };
 }
+
+export function clearTimer(roomId: string): void {
+  timers.delete(roomId);
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type * as Y from "yjs";
 import type { Awareness } from "y-protocols/awareness.js";
 import { socket } from "@/lib/socket";
@@ -7,22 +7,16 @@ import { setupYjsSync } from "@/lib/yjsSync";
 import { setupAwarenessSync } from "@/lib/yjsAwareness";
 import { setupAwareness } from "@/lib/presence";
 
-export type YjsRoom = {
-  ytext: Y.Text;
-  problem: Y.Text;
-  awareness: Awareness;
-  synced: boolean; 
-};
+export type YjsRoom = { ytext: Y.Text; problem: Y.Text; awareness: Awareness };
 
 export function useYjsRoom(roomId: string, color: string): YjsRoom | null {
-  const [parts, setParts] = useState<Omit<YjsRoom, "synced"> | null>(null);
-  const [synced, setSynced] = useState(false);
+  const [yjsRoom, setYjsRoom] = useState<YjsRoom | null>(null);
 
   useEffect(() => {
     const { ydoc, ytext, problem, awareness } = createYjsDocument();
-    setParts({ ytext, problem, awareness });
+    setYjsRoom({ ytext, problem, awareness });
 
-    const stopSync = setupYjsSync(socket, roomId, ydoc, () => setSynced(true));
+    const stopSync = setupYjsSync(socket, roomId, ydoc);
     const stopAwareness = setupAwarenessSync(socket, roomId, awareness);
     setupAwareness(awareness, color);
 
@@ -31,10 +25,9 @@ export function useYjsRoom(roomId: string, color: string): YjsRoom | null {
       stopAwareness();
       awareness.destroy();
       ydoc.destroy();
-      setParts(null);
-      setSynced(false);
+      setYjsRoom(null);
     };
   }, [roomId, color]);
 
-  return useMemo(() => (parts ? { ...parts, synced } : null), [parts, synced]);
+  return yjsRoom;
 }

@@ -8,14 +8,14 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 vi.mock("../src/services/roomPersistence.js", () => {
   const hosts = new Map<string, string>();
   return {
-    ensureRoom: vi.fn(async () => {}),
+    ensureRoom: vi.fn(async () => { }),
     recordJoin: vi.fn(async (roomId: string, user: { id: string }) => {
       if (!hosts.has(roomId)) hosts.set(roomId, user.id);
       return { isHost: hosts.get(roomId) === user.id, language: "javascript" };
     }),
-    saveLanguage: vi.fn(async () => {}),
-    saveParticipantName: vi.fn(async () => {}),
-    saveSnapshot: vi.fn(async () => {}),
+    saveLanguage: vi.fn(async () => { }),
+    saveParticipantName: vi.fn(async () => { }),
+    saveSnapshot: vi.fn(async () => { }),
     loadLatestSnapshot: vi.fn(async () => null),
   };
 });
@@ -51,7 +51,13 @@ function newSocket(): Socket {
 async function join(roomId: string, name: string) {
   const socket = newSocket();
   const doc = new Y.Doc();
-  const state = { users: [] as { name: string }[], role: null as string | null, locked: false };
+  const state = {
+    users: [] as { name: string }[],
+    role: null as string | null,
+    locked: false,
+    language: "",
+    chat: [] as string[],
+  };
 
   doc.on("update", (update: Uint8Array, origin: unknown) => {
     if (origin !== "remote") socket.emit("yjs-update", { roomId, update });
@@ -61,6 +67,11 @@ async function join(roomId: string, name: string) {
   socket.on("presence-state", (data) => { state.users = data.users; });
   socket.on("interview-role", (role) => { state.role = role; });
   socket.on("interviewer-mode-state", (enabled) => { state.locked = enabled; });
+  socket.on("language-state", (language) => { state.language = language; });
+  socket.on("chat-history", (data) => {
+    state.chat = data.messages.map((m: { message: string }) => m.message);
+  });
+  socket.on("chat-message", (m) => { state.chat.push(m.message); });
 
   await new Promise<void>((resolve) => socket.on("connect", () => resolve()));
   const synced = new Promise<void>((resolve) => socket.once("yjs-sync", () => resolve()));
@@ -165,5 +176,51 @@ describe("presence", () => {
 
     b.socket.disconnect();
     await eventually(() => expect(a.state.users.map((u) => u.name)).toEqual(["alice"]));
+  });
+});
+
+describe("language", () => {
+  it("a new room starts empty, and switching language never touches the code", async () => {
+    const a = await join("lang-code", "alice");
+    const b = await join("lang-code", "bob");
+    expect(a.text()).toBe("");
+
+    a.doc.getText("code").insert(0, "x = 1");
+    await eventually(() => expect(b.text()).toBe("x = 1"));
+
+    // Both people switch language several times, at the same moment
+    for (const language of ["python", "java", "cpp", "go"]) {
+      a.socket.emit("set-language", "lang-code", language);
+      b.socket.emit("set-language", "lang-code", language === "java" ? "c" : "typescript");
+    }
+    await pause(400);
+
+    expect(a.text()).toBe("x = 1");
+    expect(b.text()).toBe("x = 1");
+    await eventually(() => expect(a.state.language).toBe(b.state.language));
+  });
+
+  it("everyone sees the new language, and unknown languages are ignored", async () => {
+    const a = await join("lang-sync", "alice");
+    const b = await join("lang-sync", "bob");
+    expect(b.state.language).toBe("javascript");
+
+    a.socket.emit("set-language", "lang-sync", "python");
+    await eventually(() => expect(b.state.language).toBe("python"));
+
+    a.socket.emit("set-language", "lang-sync", "ruby");
+    await pause(300);
+    expect(b.state.language).toBe("python");
+  });
+});
+
+describe("chat history", () => {
+  it("sends recent chat to someone who joins late", async () => {
+    const a = await join("chat-room", "alice");
+    a.socket.emit("send-chat-message", { roomId: "chat-room", message: "hello there" });
+    await eventually(() => expect(a.state.chat).toContain("hello there"));
+
+    const b = await join("chat-room", "bob");
+    expect(b.state.chat).toEqual(["hello there"]);
   });
 });

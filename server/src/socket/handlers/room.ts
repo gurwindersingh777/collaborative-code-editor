@@ -14,6 +14,8 @@ import { getLanguage, hydrateLanguage } from "../rooms/language.js";
 import { getTimerPayload } from "../rooms/timer.js";
 import { getInterviewerMode } from "../rooms/interviewerMode.js";
 import { forgetRunHistory } from "../../services/runLimiter.js";
+import { getChatHistory } from "../rooms/chat.js";
+import { cancelEviction, scheduleEviction } from "../../services/roomLifecycle.js";
 
 const MAX_ROOM_ID_LENGTH = 64;
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -47,6 +49,7 @@ function flushIfRoomEmpty(io: Server, roomId: string): void {
     void flushRoomSnapshot(roomId).catch((error) => {
       console.error(`Final snapshot save failed for room ${roomId}:`, error);
     });
+    scheduleEviction(io, roomId);
   }
 }
 
@@ -69,19 +72,19 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       removeFromRoom(io, socket, previousRoom);
     }
     socket.join(roomId);
+    cancelEviction(roomId);
     socketRooms.set(socket.id, roomId);
     socketUsers.set(socket.id, user.id);
 
     try {
       const room = await recordJoin(roomId, { id: user.id, name }, cleanHostToken(hostToken));
+      if (isLanguage(room.language)) hydrateLanguage(roomId, room.language);
       const ydoc = await getRoomDocument(roomId);
 
       if (socketRooms.get(socket.id) !== roomId || !socket.rooms.has(roomId)) return;
 
       const role: InterviewRole = room.isHost ? "interviewer" : "candidate";
       registerRole(roomId, user.id, role);
-
-      if (isLanguage(room.language)) hydrateLanguage(roomId, room.language);
 
       addActiveUser(roomId, { socketId: socket.id, name: user.name, color: user.color });
       broadcastPresence(io, roomId);
@@ -90,7 +93,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       socket.emit("language-state", getLanguage(roomId));
       socket.emit("timer-state", getTimerPayload(roomId));
       socket.emit("interviewer-mode-state", getInterviewerMode(roomId));
-
+      socket.emit("chat-history", { roomId, messages: getChatHistory(roomId) });
       socket.emit("yjs-sync", {
         roomId,
         update: Y.encodeStateAsUpdate(ydoc),

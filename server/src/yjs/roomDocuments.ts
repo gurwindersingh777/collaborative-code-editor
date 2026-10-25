@@ -6,7 +6,6 @@ const roomDocuments = new Map<string, Y.Doc>();
 const roomInitializations = new Map<string, Promise<Y.Doc>>();
 
 export async function getRoomDocument(roomId: string): Promise<Y.Doc> {
-
   const existingDocument = roomDocuments.get(roomId);
   if (existingDocument) return existingDocument;
 
@@ -26,7 +25,7 @@ export async function getRoomDocument(roomId: string): Promise<Y.Doc> {
         console.log(`Created new Yjs document for room ${roomId}`);
       }
 
-      registerRoomDocument(roomId, ydoc)
+      registerRoomDocument(roomId, ydoc);
       roomDocuments.set(roomId, ydoc);
 
       return ydoc;
@@ -39,6 +38,10 @@ export async function getRoomDocument(roomId: string): Promise<Y.Doc> {
   })();
 
   roomInitializations.set(roomId, initialization);
-
   return initialization;
+}
+
+export function releaseRoomDocument(roomId: string): void {
+  roomDocuments.get(roomId)?.destroy();
+  roomDocuments.delete(roomId);
 }
