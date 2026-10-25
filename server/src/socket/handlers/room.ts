@@ -77,7 +77,6 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     socketUsers.set(socket.id, user.id);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); 
       const room = await recordJoin(roomId, { id: user.id, name }, cleanHostToken(hostToken));
       if (isLanguage(room.language)) hydrateLanguage(roomId, room.language);
       const ydoc = await getRoomDocument(roomId);

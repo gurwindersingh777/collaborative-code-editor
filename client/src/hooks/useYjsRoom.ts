@@ -14,6 +14,8 @@ export function useYjsRoom(roomId: string, color: string): YjsRoom | null {
 
   useEffect(() => {
     const { ydoc, ytext, problem, awareness } = createYjsDocument();
+    // The document needs the browser, so it is created here, after the first render
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setYjsRoom({ ytext, problem, awareness });
 
     const stopSync = setupYjsSync(socket, roomId, ydoc);
