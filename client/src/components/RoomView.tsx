@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import CodeEditor from "./CodeEditor";
 import RoomHeader from "./RoomHeader";
 import SidePanel, { type SideTab } from "./SidePanel";
@@ -43,7 +43,7 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
         locked={room.isLocked}
         users={room.onlineUsers}
         selfId={connection.socketId}
-        connected={connection.connected}
+        status={connection.status}
         language={room.language}
         onLanguageChange={room.changeLanguage}
         isRunning={execution.isRunning}

@@ -5,6 +5,7 @@ import type { InterviewRole, PresenceUser } from "@/types/room";
 import OnlineDots from "./OnlineDots";
 import { Check, Clipboard, LockKeyhole, Play } from "lucide-react";
 import { APP_NAME } from "@/lib/config";
+import { ConnectionStatus } from "@/hooks/useRoomConnection";
 
 type RoomHeaderProps = {
   roomId: string;
@@ -12,7 +13,7 @@ type RoomHeaderProps = {
   interviewerMode: boolean;
   onInterviewerModeChange: (enabled: boolean) => void;
   locked: boolean;
-  connected: boolean;
+  status: ConnectionStatus;
   language: Language;
   onLanguageChange: (language: Language) => void;
   isRunning: boolean;
@@ -24,7 +25,7 @@ type RoomHeaderProps = {
 export default function RoomHeader({
   roomId, role, interviewerMode, onInterviewerModeChange, locked,
   users, selfId,
-  connected, language, onLanguageChange, isRunning, onRun,
+  status, language, onLanguageChange, isRunning, onRun,
 }: RoomHeaderProps) {
   const [copied, setCopied] = useState(false);
 
@@ -56,8 +57,8 @@ export default function RoomHeader({
             aria-label="Lock editing"
             title="Lock editing: others can still read, chat and run code, but cannot edit"
             className={`btn ${interviewerMode
-                ? "bg-amber-400/15 text-amber-400"
-                : "text-vs-muted hover:text-white"
+              ? "bg-amber-400/15 text-amber-400"
+              : "text-vs-muted hover:text-white"
               }`}
           >
             <LockKeyhole data-icon="inline-start" />
@@ -76,11 +77,14 @@ export default function RoomHeader({
 
         <span className="flex items-center gap-1.5 text-vs-muted">
           <span
-            aria-hidden="true"
-            className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "animate-pulse bg-amber-400"
+            className={`h-1.5 w-1.5 rounded-full ${status === "connected"
+              ? "bg-emerald-500"
+              : status === "failed"
+                ? "bg-red-500"
+                : "animate-pulse bg-amber-400"
               }`}
           />
-          {connected ? "Connected" : "Connecting..."}
+          {status === "connected" ? "Connected" : status === "failed" ? "Could not join" : "Connecting..."}
         </span>
 
         <select
@@ -93,7 +97,10 @@ export default function RoomHeader({
           ))}
         </select>
 
-        <button onClick={onRun} disabled={isRunning} className="btn btn-primary gap-1.5">
+        <button
+          onClick={onRun}
+          disabled={isRunning || status !== "connected"}
+          className="btn btn-primary gap-1.5">
           <Play data-icon="inline-start" />
           {isRunning ? "Running..." : "Run"}
         </button>
