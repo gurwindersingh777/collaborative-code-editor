@@ -3,9 +3,10 @@ import SessionTimer from "./SessionTimer";
 import { LANGUAGES, type Language } from "@/lib/languages";
 import type { InterviewRole, PresenceUser } from "@/types/room";
 import OnlineDots from "./OnlineDots";
-import { Check, Clipboard, LockKeyhole, Play } from "lucide-react";
+import { Check, Clipboard, LockKeyhole, Moon, Play, Sun } from "lucide-react";
 import { APP_NAME } from "@/lib/config";
 import { ConnectionStatus } from "@/hooks/useRoomConnection";
+import { useTheme } from "./ThemeProvider";
 
 type RoomHeaderProps = {
   roomId: string;
@@ -28,6 +29,7 @@ export default function RoomHeader({
   status, language, onLanguageChange, isRunning, onRun,
 }: RoomHeaderProps) {
   const [copied, setCopied] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   async function handleCopyLink() {
     try {
@@ -40,7 +42,7 @@ export default function RoomHeader({
   return (
     <header className="flex min-h-10 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-vs-line bg-vs-side px-3 text-xs">
       <div className="flex items-center gap-1">
-        <span className="font-semibold text-white">{APP_NAME}</span>
+        <span className="font-semibold text-vs-fg">{APP_NAME}</span>
         <span className="h-4 w-px bg-vs-line ml-2.5" aria-hidden="true" />
         <button onClick={handleCopyLink} className="btn gap-1.5" aria-label={copied ? "Link copied" : "Copy room link"}>
           {copied ? <Check data-icon="inline-start" /> : <Clipboard data-icon="inline-start" />}
@@ -58,7 +60,7 @@ export default function RoomHeader({
             title="Lock editing: others can still read, chat and run code, but cannot edit"
             className={`btn ${interviewerMode
               ? "bg-amber-400/15 text-amber-400"
-              : "text-vs-muted hover:text-white"
+              : "text-vs-muted hover:text-vs-fg"
               }`}
           >
             <LockKeyhole data-icon="inline-start" />
@@ -70,6 +72,20 @@ export default function RoomHeader({
         )}
 
         <SessionTimer roomId={roomId} />
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="btn gap-1.5"
+          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+        >
+          {theme === "dark" ? (
+            <Sun  data-icon="inline-start" />
+          ) : (
+            <Moon data-icon="inline-start" />
+          )}
+        </button>
       </div>
 
       <div className="flex items-center gap-3">

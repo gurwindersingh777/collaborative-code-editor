@@ -52,8 +52,8 @@ export default function SidePanel({
               title={tab.label}
               onClick={() => onTabChange(tab.id)}
               className={`-mb-px flex min-w-0 flex-1 items-center justify-center gap-1.5 border-b-2 px-2 text-[11px] font-medium uppercase tracking-wide transition-colors ${active
-                ? "border-vs-accent text-white"
-                : "border-transparent text-vs-muted hover:bg-white/5 hover:text-vs-fg"
+                ? "border-vs-accent text-vs-fg"
+                : "border-transparent text-vs-muted hover:bg-vs-hover hover:text-vs-fg"
                 }`}
             >
               <tab.icon size={14} className="shrink-0" aria-hidden="true" />
@@ -72,7 +72,7 @@ export default function SidePanel({
           <pre
             className={`h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-[13px] leading-6 ${output
               ? /error|exception|traceback|failed/i.test(output)
-                ? "text-red-300"
+                ? "text-red-700 dark:text-red-300"
                 : "text-vs-fg"
               : "text-vs-muted"
               }`}

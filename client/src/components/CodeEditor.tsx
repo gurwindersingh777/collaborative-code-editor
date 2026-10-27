@@ -11,9 +11,10 @@ type CodeEditorProps = {
   ytext: Y.Text;
   awareness: Awareness;
   isReadOnly: boolean;
+  theme: "dark" | "light";
 };
 
-export default function CodeEditor({ language, ytext, awareness, isReadOnly }: CodeEditorProps) {
+export default function CodeEditor({ language, ytext, awareness, isReadOnly,theme }: CodeEditorProps) {
   const [editor, setEditor] = useState<MonacoEditor.IStandaloneCodeEditor | null>(null);
   
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function CodeEditor({ language, ytext, awareness, isReadOnly }: C
       height="100%"
       width="100%"
       language={language}
-      theme="vs-dark"
+      theme={theme === "dark" ? "vs-dark" : "light"}
       onMount={(mountedEditor) => setEditor(mountedEditor)}
       options={{
         readOnly: isReadOnly,

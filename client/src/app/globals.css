@@ -1,20 +1,53 @@
-@import "tailwindcss";
+ @import "tailwindcss";
 
 @theme static {
-  --color-vs-editor: #1e1e1e;      /* editor background */
-  --color-vs-side: #252526;        /* header and side panel */
-  --color-vs-line: #3c3c3c;        /* borders */
-  --color-vs-hover: #2a2d2e;
-  --color-vs-input: #3c3c3c;
-  --color-vs-fg: #cccccc;          /* normal text */
-  --color-vs-muted: #858585;       /* secondary text */
-  --color-vs-accent: #007acc;
-  --color-vs-accent-hover: #1a8ad4;
-  --color-vs-focus: #3794ff;
+  --color-vs-editor: var(--theme-editor);
+  --color-vs-side: var(--theme-side);
+  --color-vs-line: var(--theme-line);
+  --color-vs-hover: var(--theme-hover);
+  --color-vs-input: var(--theme-input);
+  --color-vs-fg: var(--theme-fg);
+  --color-vs-muted: var(--theme-muted);
+  --color-vs-accent: var(--theme-accent);
+  --color-vs-accent-hover: var(--theme-accent-hover);
+  --color-vs-focus: var(--theme-focus);
+}
+
+/* Dark theme — default */
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --theme-editor: #1e1e1e;
+  --theme-side: #252526;
+  --theme-line: #3c3c3c;
+  --theme-hover: #2a2d2e;
+  --theme-input: #3c3c3c;
+  --theme-fg: #cccccc;
+  --theme-muted: #858585;
+  --theme-accent: #007acc;
+  --theme-accent-hover: #1a8ad4;
+  --theme-focus: #3794ff;
+}
+
+/* Light theme */
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --theme-editor: #ffffff;
+  --theme-side: #f3f3f3;
+  --theme-line: #d4d4d4;
+  --theme-hover: #e8e8e8;
+  --theme-input: #ffffff;
+  --theme-fg: #1f1f1f;
+  --theme-muted: #616161;
+  --theme-accent: #006ab1;
+  --theme-accent-hover: #005a96;
+  --theme-focus: #007fd4;
 }
 
 html {
-  color-scheme: dark; /* dark scrollbars, dropdowns and form controls */
+  background: var(--color-vs-editor);
 }
 
 body {
@@ -23,16 +56,22 @@ body {
   color: var(--color-vs-fg);
   font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
-}
-
-@media (max-width: 640px) {
-  .btn { min-height: 30px; }
-  .field { height: 30px; }
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #424242 transparent;
+  scrollbar-color: var(--color-vs-line) transparent;
+}
+
+@media (max-width: 640px) {
+  .btn {
+    min-height: 30px;
+  }
+
+  .field {
+    height: 30px;
+  }
 }
 
 @layer components {
@@ -45,18 +84,34 @@ body {
   .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     height: 24px;
     padding: 0 8px;
+    border: 1px solid transparent;
     border-radius: 2px;
     font-size: 12px;
     color: var(--color-vs-fg);
     cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
   }
-  .btn:hover:not(:disabled) { background: var(--color-vs-hover); }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .btn-primary { background: var(--color-vs-accent); color: #fff; }
-  .btn-primary:hover:not(:disabled) { background: var(--color-vs-accent-hover); }
+  .btn:hover:not(:disabled) {
+    background: var(--color-vs-hover);
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: var(--color-vs-accent);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-vs-accent-hover);
+  }
 
   .field {
     height: 24px;
@@ -68,5 +123,22 @@ body {
     font-size: 12px;
     outline: none;
   }
-  .field:focus { border-color: var(--color-vs-accent); }
+
+  .field:focus {
+    border-color: var(--color-vs-focus);
+  }
+
+  .btn:focus-visible,
+  .field:focus-visible {
+    outline: 2px solid var(--color-vs-focus);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+  }
 }

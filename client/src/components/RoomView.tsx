@@ -8,6 +8,7 @@ import { useRoomState } from "@/hooks/useRoomState";
 import { useYjsRoom } from "@/hooks/useYjsRoom";
 import { socket } from "@/lib/socket";
 import type { LocalUser } from "@/lib/presence";
+import { useTheme } from "./ThemeProvider";
 
 type RoomViewProps = {
   roomId: string;
@@ -22,6 +23,7 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
   const room = useRoomState(roomId);
   const execution = useCodeExecution(roomId);
   const connection = useRoomConnection(roomId, user);
+  const { theme } = useTheme();
 
   function handleRun() {
     setActiveTab("output");
@@ -64,6 +66,7 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
               ytext={yjsRoom.ytext}
               awareness={yjsRoom.awareness}
               isReadOnly={room.isLocked}
+              theme={theme}
             />
           )}
         </div>
