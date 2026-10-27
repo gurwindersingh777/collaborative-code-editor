@@ -16,23 +16,27 @@ type ThemeContextValue = {
   toggleTheme: () => void;
 };
 
+const STORAGE_KEY = "app-theme";
+
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") {
+    return "dark";
+  }
+
+  const savedTheme = localStorage.getItem(STORAGE_KEY);
+
+  return savedTheme === "light" ? "light" : "dark";
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("app-theme") as Theme | null;
-
-    if (savedTheme === "light" || savedTheme === "dark") {
-      setTheme(savedTheme);
-    }
-  }, []);
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
-    localStorage.setItem("app-theme", theme);
+    localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
