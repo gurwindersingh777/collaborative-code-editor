@@ -1,4 +1,6 @@
- @import "tailwindcss";
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme static {
   --color-vs-editor: var(--theme-editor);
@@ -54,9 +56,15 @@ body {
   margin: 0;
   background: var(--color-vs-editor);
   color: var(--color-vs-fg);
-  font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+  font:
+    15px/1.5 "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 * {
@@ -92,7 +100,9 @@ body {
     font-size: 12px;
     color: var(--color-vs-fg);
     cursor: pointer;
-    transition: background-color 150ms ease, color 150ms ease;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
   }
 
   .btn:hover:not(:disabled) {
