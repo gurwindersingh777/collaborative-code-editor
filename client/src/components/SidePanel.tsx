@@ -1,7 +1,12 @@
+
+"use client";
+
 import type * as Y from "yjs";
+import type { editor as MonacoEditor } from "monaco-editor";
 import Chat from "./Chat";
 import OnlineUsers from "./OnlineUsers";
 import ProblemStatement from "./ProblemStatement";
+import EditorActions from "./EditorActions";
 import type { PresenceUser } from "@/types/room";
 import { FileText, MessageSquare, Terminal, Users } from "lucide-react";
 
@@ -24,28 +29,52 @@ type SidePanelProps = {
   onRename: (name: string) => void;
   activeTab: SideTab;
   onTabChange: (tab: SideTab) => void;
+  editor: MonacoEditor.IStandaloneCodeEditor | null;
+  editorContainer: HTMLDivElement | null;
 };
 
 export default function SidePanel({
-  roomId, problem, locked, output, users, selfId, onRename, activeTab, onTabChange,
+  roomId,
+  problem,
+  locked,
+  output,
+  users,
+  selfId,
+  onRename,
+  activeTab,
+  onTabChange,
+  editor,
+  editorContainer,
 }: SidePanelProps) {
-
-  const panel = (tab: SideTab) => (activeTab === tab ? "h-full" : "hidden");
+  const panel = (tab: SideTab) =>
+    activeTab === tab ? "h-full" : "hidden";
 
   return (
     <aside className="flex min-h-0 flex-col border-l border-vs-line bg-vs-side">
-      <div className="flex h-9 shrink-0 items-center border-b border-vs-line px-3">
+      <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-vs-line px-3">
         <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-vs-muted">
           Workspace
         </span>
+
+        <EditorActions
+          editor={editor}
+          container={editorContainer}
+          isReadOnly={locked}
+        />
       </div>
 
-      <div role="tablist" className="flex h-9 shrink-0 border-b border-vs-line">
+      <div
+        role="tablist"
+        aria-label="Workspace panels"
+        className="flex h-9 shrink-0 border-b border-vs-line"
+      >
         {TABS.map((tab) => {
           const active = activeTab === tab.id;
+
           return (
             <button
               key={tab.id}
+              type="button"
               role="tab"
               aria-selected={active}
               aria-label={tab.label}
@@ -57,7 +86,7 @@ export default function SidePanel({
                 }`}
             >
               <tab.icon size={14} className="shrink-0" aria-hidden="true" />
-              <span className="hidden truncate sm:inline">{tab.label}</span>
+              <span className="hidden truncate sm:inline"> {tab.label} </span>
             </button>
           );
         })}
@@ -68,7 +97,6 @@ export default function SidePanel({
           {problem && <ProblemStatement problem={problem} isReadOnly={locked} />}
         </div>
 
-
         <div className={panel("output")}>
           <pre
             className={`h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-[13px] leading-6 ${output
@@ -78,7 +106,7 @@ export default function SidePanel({
               : "text-vs-muted"
               }`}
           >
-            {output || <span className="text-vs-muted text-[13px]">Run the code to see its output here.</span>}
+            {output || <span className="text-vs-muted text-[13px]"> Run the code to see its output here.</span>}
           </pre>
         </div>
 

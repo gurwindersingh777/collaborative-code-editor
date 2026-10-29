@@ -1,4 +1,7 @@
-import { useState } from "react";
+"use client";
+
+import { useCallback, useState } from "react";
+import type { editor as MonacoEditor } from "monaco-editor";
 import CodeEditor from "./CodeEditor";
 import RoomHeader from "./RoomHeader";
 import SidePanel, { type SideTab } from "./SidePanel";
@@ -18,12 +21,21 @@ type RoomViewProps = {
 
 export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
   const [activeTab, setActiveTab] = useState<SideTab>("problem");
-
+  const [editorInstance, setEditorInstance] = useState<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  const [editorContainer, setEditorContainer] = useState<HTMLDivElement | null>(null);
   const yjsRoom = useYjsRoom(roomId, user.color);
   const room = useRoomState(roomId);
   const execution = useCodeExecution(roomId);
   const connection = useRoomConnection(roomId, user);
   const { theme } = useTheme();
+
+  const handleEditorReady = useCallback(
+    (editor: MonacoEditor.IStandaloneCodeEditor, container: HTMLDivElement) => {
+      setEditorInstance(editor);
+      setEditorContainer(container);
+    },
+    []
+  );
 
   function handleRun() {
     setActiveTab("output");
@@ -67,6 +79,7 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
               awareness={yjsRoom.awareness}
               isReadOnly={room.isLocked}
               theme={theme}
+              onEditorReady={handleEditorReady}
             />
           )}
         </div>
@@ -81,6 +94,8 @@ export default function RoomView({ roomId, user, onRename }: RoomViewProps) {
           onRename={handleRename}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          editor={editorInstance}
+          editorContainer={editorContainer}
         />
       </div>
     </main>
